@@ -28,15 +28,91 @@
 #include <stdbool.h>
 
 //---------------------- include other files ---------------------------------
-#include "maintenance_manager.h"
-#include "task_manager.h"
-#include "edge_server.h"
-#include "monitor.h"
+
+//#include "main.c"
 
 
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
 #define BUF_SIZE 1024
+#define PATH "C:\\Users\\Ana\\Desktop\\SO\\project\\"
+
+//---------------------- structs ---------------------------------
+
+
+// Message struct
+typedef struct{
+    long mtype; //strtol(server.name) 
+    int maintenance_time;
+} msg_struct;
+
+
+//Server details node only temporary
+typedef struct server_node_aux * aux;
+typedef struct server_node_aux{
+    char * name;
+    int cpu1;
+    int cpu2;
+    aux * next;
+} server_node;
+
+
+// Config struct
+typedef struct{
+    int queue_pos;
+    int max_wait;
+    int edge_server_number;
+    server_node * server_info;
+} config_struct;
+
+
+typedef struct{
+    pthread_t thread;
+    pthread_cond_t cond_var;
+    int mips;
+    bool active;
+    //missing stuff?
+} cpu_struct;
+
+
+
+// servers structs
+typedef struct server_node_aux * server_next;
+typedef struct{
+    //pthread_cond_t cond_var; // can we still use this???
+    int state;//= status.NORMAL;
+    cpu_struct cpu1;
+    cpu_struct cpu2;
+    int performance; //lvl of performance
+    int active_cpus;//=1; //default value for number of cpu is 1
+
+    int tasks_done;//=0;
+    int maintenance;//=0;
+
+    server_next * next;
+
+} server_struct;
+
+
+// SHM struct
+typedef struct{
+    int time;
+    int status;//=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
+
+    int tasks_total;//=0;
+    int tasks_done;//=0;
+    int total_time_response;//=0;
+    int tasks_refused;//=0;
+
+    //servers array data pointer
+    server_struct * server;
+
+    pthread_mutex_t log_mutex;
+
+    // Mutexes ???????
+    //pthread_mutex_t end_mutex, runways_mutex, time_mutex, log_mutex, stdout_mutex, stats_mutex, servers_array_mutex;
+
+} shm_struct;
 
 
 //---------------------- global vars ---------------------------------
@@ -49,92 +125,35 @@ config_struct * config;
 
 //TODO
 int mqid, shmid, servers_shmid; // Message Queue | Shared memory
-shm_struct* shm;                // Shared memory shm_struct struct
-config_struct* config;          // Config struct
+shm_struct * shm;                // Shared memory shm_struct struct
+config_struct * config;          // Config struct
 pthread_mutexattr_t attrmutex;  // Mutexes attributes
 pthread_condattr_t cattr;       // Condition variables attributes
 sigset_t block_sigint;          // Signal set
 pid_t ppid;
 
 
-//---------------------- structs ---------------------------------
-
-// SHM struct
-typedef struct{
-    int time;
-    int status=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
-
-    int tasks_total=0;
-    int tasks_done=0;
-    int total_time_response=0;
-    int tasks_refused=0;
-
-    //servers array data pointer
-    server_struct * server;
-
-    // Mutexes ???????
-    //pthread_mutex_t end_mutex, runways_mutex, time_mutex, log_mutex, stdout_mutex, stats_mutex, servers_array_mutex;
-
-} shm_struct;
-
-// Message struct
-typedef struct{
-    long mtype; //strtol(server.name) 
-    int maintenance_time;
-} msg_struct;
-
-// Config struct
-typedef struct{
-    int queue_pos;
-    int max_wait;
-    int edge_server_number;
-    server_node * server_info;
-} config_struct;
-
-
-//Server details node only temporary
-typedef struct{
-    char[BUF_SIZE] name;
-    int cpu1;
-    int cpu2;
-    server_node * next;
-} server_node;
-
-
-// servers structs
-typedef struct{
-    //pthread_cond_t cond_var; // can we still use this???
-    int state= status.NORMAL;
-    cpu_struct[2] cpu;
-    int performance; //lvl of performance
-    int active_cpus=1; //default value for number of cpu is 1
-
-    int tasks_done=0;
-    int maintenance=0;
-
-    server_struc * next;
-
-} server_struct;
-
-
-typedef struct{
-    pthread_t thread;
-    pthread_cond_t cond_var;
-    int mips;
-    bool active;
-    //missing stuff?
-} cpu_struct;
 
 
 //---------------------- functions ---------------------------------
 
 //main
-int print(char * message);
+void print(char * message);
 void write_log(char * message);
 void clear_log();
 bool read_config(char * config_file);
 void start(char * config_file);
 void end(int status);
 
+int generate(int min, int max);
+bool check(server_struct * s);
+void maintenance_manager();
+void edge_server(int id);
+void monitor();
+bool check_status();
+bool task_format(char * buffer);
+bool create_task(int id,int instructions, int max_time);
+void read_pipe();
+void task_manager();
 
 #endif

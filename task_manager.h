@@ -1,4 +1,6 @@
 
+#ifndef TASK_MANAGER_H
+#define TASK_MANAGER_H
 #include "main.h"
 
 // wait_to_exit(); update shm status to -1 /waiting for things to end
@@ -6,18 +8,21 @@
 
 bool check_status(){
     int temp;
-    temp=shm.status;
+    temp=shm->status;
     //TODO missing mutex
 
     if (temp>0) return true;
     return false;
 }
 
-bool task_format(char[BUF_SIZE] buffer){
+bool task_format(char * buffer){
+    char temp [BUF_SIZE];
+    strcpy(temp,buffer);
     int id,instructions,max_time;
     //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-    if(fscanf(buffer, "%d:%d:%d", id,instructions,max_time))==3){
-        return create_task(id,instructions,max_time);
+    if(fscanf(temp, "%d:%d:%d", &id, &instructions, &max_time)==3){
+        bool value = create_task(id,instructions,max_time);
+        return value;
     }
     return false;
 
@@ -70,7 +75,7 @@ thread dispatcher
     
     print("task manager started reading from pipe");
 
-    int fd, command = 0; // 1- task, 2- stats, -1 exit
+    int fd;
     char buffer[BUF_SIZE];
     char message[BUF_SIZE];
 
@@ -82,7 +87,7 @@ thread dispatcher
 
     while(1){
 
-        if(check_status()==true) break;
+        if(check_status()==false) break;
 
         for (int n = 0; read(fd, buffer, BUF_SIZE) && n > 0 && buffer[n] != '\0' && buffer[n] != '\n'; n = read(fd, buffer, sizeof(char)));
         if (strcmp(buffer, "EXIT") == 0) {
@@ -102,7 +107,7 @@ thread dispatcher
                 }
                 
                 strcat(message,buffer);
-                writes_log(message);
+                write_log(message);
             }  
         }
 
@@ -118,15 +123,15 @@ thread dispatcher
 
 //TODO
 void task_manager() {
-    writes_log("PROCESS TASK_MANAGER CREATED");
-    print("TASKMANAGER PID: %d", getpid());
+    write_log("PROCESS TASK_MANAGER CREATED");
+    printf("TASKMANAGER PID: %d", getpid());
 
     //signal(SIGUSR1, print_stats);
 
     //create PROCESS of Servers, check shm for number and name
     //fork()
     int i;
-    for(i=0; i< config.edge_server_number; i++){
+    for(i=0; i< config->edge_server_number; i++){
         if(fork()){
             edge_server(i);
         }
@@ -157,3 +162,5 @@ realizar.
     read_pipe();
 
 }
+
+#endif

@@ -1,8 +1,31 @@
 /* SO 2021/22 Ana Beatriz Marques 2018274233 */
+#ifndef MOBILE_NODE_C
+#define MOBILE_NODE_C
+
+
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+
+#include <sys/fcntl.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <regex.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <string.h>
+#include <time.h>
+#include <stdbool.h>
 
 int debug;
 
@@ -56,3 +79,5 @@ int main(int argc, char *argv[]){
     print("ended the program");
     exit(EXIT_SUCCESS);
 }
+
+#endif

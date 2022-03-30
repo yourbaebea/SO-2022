@@ -1,8 +1,13 @@
 /* SO 2021/22 Ana Beatriz Marques 2018274233 */
-
+#ifndef MAIN_C
+#define MAIN_C
 #include "main.h"
+#include "maintenance_manager.h"
+#include "task_manager.h"
+#include "edge_server.h"
+#include "monitor.h"
 
-int print(char * message){
+void print(char * message){
     if(debug) printf("DEBUG: %s\n", message);
 }
 
@@ -33,7 +38,23 @@ void clear_log(){
 }
 
 bool read_config(char * config_file) {
+    
+    /*
+    char dir[BUF_SIZE];
+
+    strcpy(dir, PATH);
+    strcat(dir, config_file); 
+    print(PATH);
+    print(config_file);
+    print(dir);
+    
     print("READING CONFIG FILE");
+    FILE * fi = fopen(dir, "r");
+    */
+
+
+
+    print("CHECK THIS\n\n\n error \n\n\n READING CONFIG FILE");
     FILE * fi = fopen(config_file, "r");
 
     if (fi == NULL){
@@ -55,32 +76,58 @@ bool read_config(char * config_file) {
 
     */
 
-   int temp,i;
+    print("1");
+    int temp,i;
 
-    fscanf(fi, "%d\n", &config->queue_pos);
-    fscanf(fi, "%d\n", &config->max_wait);
-    fscanf(fi, "%d\n", temp);
+    //config
+    config_struct * config_temp;
+
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+
+    fscanf(fi, "%d\n%d\n%d\n", config_temp->queue_pos,config_temp->max_wait, temp);
+
+    printf("received: %d %d %d\n", config_temp->queue_pos, config_temp->max_wait, temp);
+
     if(temp<2) return false;
+
     server_node * server_temp;
-    server_node * save=config.server_info ;
+    server_node * save;
+    save =config_temp->server_info ;
+
+    print("2");
+
+    char name [BUF_SIZE];
 
     for(i=0; i<temp; i++){
-        if(fscanf(fi, "%s,%d,%d\n", &server_temp->name, &server_temp->cpu1, &server_temp->cpu2)!=3) return false;
+        read = getline(&line, &len, fi);
+        //if(fscanf(fi, "%s,%d,%d\n", name, &server_temp->cpu1, &server_temp->cpu2)!=3) return false;
+        fscanf(line, "%s,%d,%d\n", name, &server_temp->cpu1, &server_temp->cpu2);
+        printf("received: %s ; %d  ; %d\n", name, server_temp->cpu1, server_temp->cpu2 );
+        server_temp->name=name;
         save = server_temp;
         save->next=save;
         server_temp=NULL;
         save=NULL;
     }
 
-    config.edge_server_number=temp;
+    print("3");
+
+    config_temp->edge_server_number=temp;
 
     if(debug){
         printf("just to check reading config");
-        for(i=0; i<temp; i++) printf(" server name %s, cpu1 %d, cpu2 %d");
+        for(i=0; i<temp; i++) printf(" server name %s, cpu1 %d, cpu2 %d",server_temp->name, server_temp->cpu1, server_temp->cpu2 );
     }
 
 
     fclose(fi);
+
+    config = config_temp;
+
+    return true;
 }
 
 
@@ -88,7 +135,7 @@ void start(char * config_file){
 
     if(!read_config(config_file)){
         print("ERROR READING CONFIG FILE, LEAVING");
-        end(end_FAILURE);
+        end(EXIT_FAILURE);
     }
 
     print("CONFIG FILE DONE");
@@ -106,7 +153,7 @@ void start(char * config_file){
     log_file = fopen(LOG_FILE, "a");
     if(log_file == NULL){
         print("ERROR OPENING LOG FILE");
-        end(end_FAILURE);
+        end(EXIT_FAILURE);
     }
 
     // Create pipe
@@ -114,7 +161,7 @@ void start(char * config_file){
     unlink(TASK_PIPE);
     if(mkfifo(TASK_PIPE, O_CREAT|O_EXCL|0600) < 0) {
         print("ERROR CREATING FIFO TASK_PIPE");
-        end(end_FAILURE);
+        end(EXIT_FAILURE);
     }
 
 
@@ -122,7 +169,7 @@ void start(char * config_file){
     print("CREATE SHM");
     if((shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT|0700)) == -1) {
         print("ERROR IN CREATE SHM");
-        end(end_FAILURE);
+        end(EXIT_FAILURE);
     }
     shm = shmat(shmid, NULL, 0);
 
@@ -131,9 +178,6 @@ void start(char * config_file){
     //Create shm for list of tasks
     //TODO
 
-
-
-    writes_log(~DEB, "Creating message queue (MQ)");
 
     if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0700)) == -1) {
         printf ("Error on MQ creation\n");
@@ -152,7 +196,7 @@ void end(int status){
 
 
 int main(int argc, char *argv[]){
-    if(argc >=4 || arg <= 1){
+    if(argc >=4 || argc <= 1){
         printf("WRONG FORMAT, ./offload_simulator {configfile} [debug]\n");
         return 0;
     }
@@ -185,3 +229,5 @@ int main(int argc, char *argv[]){
         end(EXIT_SUCCESS);
     }
 }
+
+#endif

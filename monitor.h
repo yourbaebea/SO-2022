@@ -1,9 +1,11 @@
 
+#ifndef MONITOR_H
+#define MONITOR_H
 #include "main.h"
 
 //TODO
 void monitor() {
-    writes_log("INSIDE MONITOR");
+    write_log("INSIDE MONITOR");
 
     while(1){
         //update cpu status shm depending on lvl
@@ -20,3 +22,5 @@ void monitor() {
     }
 
 }
+
+#endif

@@ -1,10 +1,13 @@
 
+#ifndef EDGE_SERVER_H
+#define EDGE_SERVER_H
+
 #include "main.h"
 
 
 //TODO
 void edge_server(int id) {
-    writes_log("EDGE SERVER");
+    write_log("EDGE SERVER");
 
     //inform Maintenance Manager by mq????
 
@@ -15,3 +18,6 @@ void edge_server(int id) {
     }
 
 }
+
+
+#endif

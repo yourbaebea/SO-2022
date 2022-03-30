@@ -1,6 +1,9 @@
 
+#ifndef MAINTENANCE_MANAGER_H
+#define MAINTENANCE_MANAGER_H
 #include "main.h"
 
+/*
 // Receive messages from MQ and answer back with SHM slot id
 void receives_messages() {
     print()
@@ -44,10 +47,16 @@ void receives_messages() {
         if (valid == 1 && flights_ahead(node) > 5)
             give_holding_order(node, 1);
     }
-    writes_log(DEB, "[Control Tower] Terminating receives_messages");
+    write_log(DEB, "[Control Tower] Terminating receives_messages");
+}
+*/
+
+int generate(int min, int max){
+    srand(time(NULL));
+    return (rand() % max)+ min;
 }
 
-int generate_time(){
+bool check(server_struct * s){
 
 }
 
@@ -57,68 +66,33 @@ int generate_time(){
 //TODO
 void maintenance_manager() {
 
-    int maintenance_time;
-    server * current=NULL;
+    int maintenance_time, i;
+    server_struct * current=NULL;
 
     while(1){
-        if(check_status()) break;
-        shm->server
-        while(i<config.edge_server_number){
-            check(shm->server)
+        if(check_status()==false) break;
+        current= shm->server;
+
+        //only try to do maintenance in random server
+        i=0;
+        while(i<config->edge_server_number){
+            //check(current);
+            //send message in mq
+            /*
+                if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
+            write_log("Error sending message to message queue\n");
+            end(EXIT_FAILURE);
+        }
+            */
+            //TODO
         }
 
-
-
-        
-        
-        
-        usleep(generate_time*1000); //interval between maintenance
-
+        usleep(generate(1,5)*1000); //interval between maintenance
 
     }
-    
-    sem_wait(mutex_shm);
-    if(shm->started==true){
-      time_t t;
-      srand((unsigned) time(&t));
-      for(int i=0; i<config.teams; i++){
-		    if(shm->teams[i].name==NULL) break;
-        for(int j=0; j<config.max_cars_per_team; j++){
-         // if(shm->teams[i].list_of_cars[j]==NULL || shm->teams[i].list_of_cars[j].breakdown) break;
-          if(shm->teams[i].list_of_cars[j].reliability>= (rand() % 100 + 1)){
-            //ex: if reliability is 95%, only when random value is between 95 and 100 (5%) generates breakdown
 
-            // new message to that car, we are sending the team pos and car pos in the team to make it easier to search,
-            // im not sure this is needed bc this message is read in the thread so we can edit the thread itself
-            //and not the shm list
-            Message msg;
-            msg.team= i;
-            msg.car= j;
-            if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
-              write_log("Error sending message to message queue\n");
-              end(EXIT_FAILURE);
-            }
+    print("leaving maintenance");
 
-            if(DEBUG) printf(msg.mtype);
-          }
-        }
-      }        
-    }
-	}
-  sem_post(mutex_shm);
-      
-  usleep(config.time_unit*1000* config.breakdown_interval); //time in between T_Avaria
 }
 
-    if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
-        write_log("Error sending message to message queue\n");
-        end(EXIT_FAILURE);
-    }
-
-
-
-    writes_log("INSIDE MAINTENANCE");
-
-
-
-}
+#endif
