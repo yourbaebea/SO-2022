@@ -19,9 +19,9 @@ Ana Beatriz Marques 2018274233
 - ./mobile_node {total_tasks} {interval} {instructions} {max_time_task} [debug]
 
 
-##Checklist
+## Checklist
 
-###Mobile nodes
+### Mobile nodes
 - [ ] Criação do mobile node S
 - [ ] Leitura correta dos parâmetros da linha de comando
 - [ ] Geração e escrita das tarefas no named pipe
@@ -34,25 +34,25 @@ Ana Beatriz Marques 2018274233
 - [ ] Escrever a informação estatística no ecrã como resposta ao sinal SIGTSTP
 - [ ] Capturar o sinal SIGINT, terminar a corrida e liberta os recursos
 
-###Task Manager
+### Task Manager
 
 - [ ] Criar os processos Edge Server de acordo com as configurações S 
 - [ ] Ler e validar comandos lidos do named pipe
 - [ ] Criação da thread scheduler e gestão do escalonamento das tarefas S (preliminar)
 - [ ] Criação da thread dispatcher para distribuição das tarefas
 
-###Edge Server
+### Edge Server
 
 - [ ] Criação das threads que simulam os vCPUs S
 - [ ] Executar as tarefas
-###Monitor
+### Monitor
 - [ ] Controla o nível de performance dos Edge Server de acordo com as regras estabelecidas
 
-###Maintenance Manager
+### Maintenance Manager
 - [ ] Gerar mensagens de manutenção, receber resposta e gerir a manutenção
-###Ficheiro log
+### Ficheiro log
 - [ ] Envio sincronizado do output para ficheiro de log e ecrã. S
-###Geral
+### Geral
 - [ ] Criar um makefile S
 - [ ] Diagrama com a arquitetura e mecanismos de sincronização S (preliminar)
 - [ ] Suporte de concorrência no tratamento de pedidos
