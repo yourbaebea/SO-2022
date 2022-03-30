@@ -34,7 +34,6 @@
 #include "monitor.h"
 
 
-
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
 #define BUF_SIZE 1024
@@ -48,6 +47,7 @@ FILE* log_file;                 // Log file pointer
 shm_struct* shm;
 config_struct * config;
 
+//TODO
 int mqid, shmid, servers_shmid; // Message Queue | Shared memory
 shm_struct* shm;                // Shared memory shm_struct struct
 config_struct* config;          // Config struct
@@ -58,6 +58,24 @@ pid_t ppid;
 
 
 //---------------------- structs ---------------------------------
+
+// SHM struct
+typedef struct{
+    int time;
+    int status=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
+
+    int tasks_total=0;
+    int tasks_done=0;
+    int total_time_response=0;
+    int tasks_refused=0;
+
+    //servers array data pointer
+    server_struct * server;
+
+    // Mutexes ???????
+    //pthread_mutex_t end_mutex, runways_mutex, time_mutex, log_mutex, stdout_mutex, stats_mutex, servers_array_mutex;
+
+} shm_struct;
 
 // Message struct
 typedef struct{
@@ -107,23 +125,6 @@ typedef struct{
     //missing stuff?
 } cpu_struct;
 
-// SHM struct
-typedef struct{
-    int time;
-    int status=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
-
-    int tasks_total=0;
-    int tasks_done=0;
-    int total_time_response=0;
-    int tasks_refused=0;
-
-    //servers array data pointer
-    server_struct * server;
-
-    // Mutexes ???????
-    //pthread_mutex_t end_mutex, runways_mutex, time_mutex, log_mutex, stdout_mutex, stats_mutex, servers_array_mutex;
-
-} shm_struct;
 
 //---------------------- functions ---------------------------------
 
@@ -134,11 +135,6 @@ void clear_log();
 bool read_config(char * config_file);
 void start(char * config_file);
 void end(int status);
-
-
-
-
-
 
 
 #endif
