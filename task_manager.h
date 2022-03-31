@@ -20,7 +20,7 @@ bool task_format(char * buffer){
     strcpy(temp,buffer);
     int id,instructions,max_time;
     //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-    if(fscanf(temp, "%d:%d:%d", &id, &instructions, &max_time)==3){
+    if(sscanf(temp, "%d:%d:%d", &id, &instructions, &max_time)==3){
         bool value = create_task(id,instructions,max_time);
         return value;
     }

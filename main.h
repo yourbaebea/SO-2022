@@ -46,15 +46,13 @@ typedef struct{
     int maintenance_time;
 } msg_struct;
 
-
-//Server details node only temporary
-typedef struct server_node_aux * aux;
-typedef struct server_node_aux{
+typedef struct server_node_aux * server_node_next;
+typedef struct server_node_aux {
     char * name;
     int cpu1;
     int cpu2;
-    aux * next;
-} server_node;
+    server_node_next * next;
+}server_node;
 
 
 // Config struct
@@ -77,8 +75,8 @@ typedef struct{
 
 
 // servers structs
-typedef struct server_node_aux * server_next;
-typedef struct{
+typedef struct server_struct_aux * server_struct_next;
+typedef struct server_struct_aux{
     //pthread_cond_t cond_var; // can we still use this???
     int state;//= status.NORMAL;
     cpu_struct cpu1;
@@ -89,7 +87,7 @@ typedef struct{
     int tasks_done;//=0;
     int maintenance;//=0;
 
-    server_next * next;
+    server_struct_next * next;
 
 } server_struct;
 
@@ -142,6 +140,8 @@ void print(char * message);
 void write_log(char * message);
 void clear_log();
 bool read_config(char * config_file);
+server_node * read_server_info(char * line);
+bool read_config_by_line(char * config_file);
 void start(char * config_file);
 void end(int status);
 

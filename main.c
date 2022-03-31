@@ -12,7 +12,6 @@ void print(char * message){
 }
 
 void write_log(char * message){
-    char buffer[80];
   	char timeformat [80];
     time_t rawtime;
     struct tm* timeinfo;
@@ -37,6 +36,151 @@ void clear_log(){
     fclose(fopen(LOG_FILE, "w"));
 }
 
+
+server_node * read_server_info(char * line){
+    char name[BUF_SIZE];
+    char buffer_line[BUF_SIZE];
+    int cpu1,cpu2;
+
+    strcpy(buffer_line,line);
+    buffer_line[strcspn(buffer_line, "\n")] = 0;
+    print(buffer_line);
+
+    if(sscanf(buffer_line, "%[^,],%d,%d", name, &cpu1, &cpu2)==-1){
+        print("error in reading sscanf");
+        return false; 
+    }
+
+    printf("nova linha lida: s %s cpu %d cpu %d\n", name, cpu1, cpu2);
+
+
+    //assign the config file
+    server_node * aux= (server_node *) malloc(sizeof(server_node));
+    aux->name=name;
+    aux->cpu1=cpu1;
+    aux->cpu2=cpu2;
+    aux->next=NULL;
+
+    return aux;
+}
+
+
+bool read_config_by_line(char * config_file){
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    char buffer_line[BUF_SIZE];
+
+
+    //config
+    config = (config_struct *) malloc(sizeof(config_struct));
+    config->server_info = (server_node *) malloc(sizeof(server_node));
+
+
+
+    fp = fopen(config_file, "r");
+    if (fp == NULL){
+        print("not opening");
+        return false;
+    }
+
+    int i;
+    int v1,v2,v3;
+    if((read = getline(&line, &len, fp)) != -1){
+        strcpy(buffer_line,line);
+        buffer_line[strcspn(buffer_line, "\n")] = 0;
+        v1=atoi(buffer_line);
+    }
+    else return false;
+
+    if((read = getline(&line, &len, fp)) != -1){
+        strcpy(buffer_line,line);
+        buffer_line[strcspn(buffer_line, "\n")] = 0;
+        v2=atoi(buffer_line);
+    }
+    else return false;
+
+    if((read = getline(&line, &len, fp)) != -1){
+        strcpy(buffer_line,line);
+        buffer_line[strcspn(buffer_line, "\n")] = 0;
+        v3=atoi(buffer_line);
+    }
+    else return false;
+
+    //printf("v1: %d v2: %d v3: %d\n", v1,v2,v3);
+
+    if(v3<=2){
+        print("number of servers <=2");
+        return false;
+    }
+
+
+    print("reading the server info now");
+    server_node * temp = (server_node *) malloc(sizeof(server_node));
+    server_node * aux = (server_node *) malloc(sizeof(server_node));
+
+    if((read = getline(&line, &len, fp)) == -1){
+            print("error reading line");
+            return false; 
+        }
+
+    aux= read_server_info(line);
+    config->server_info= aux;
+    i=0;
+
+    printf("%d  temp: %s, aux: %s, config server: %s\n",i, temp->name, aux->name, config->server_info->name);
+
+
+    for(i=1; i< v3; i++){
+        if((read = getline(&line, &len, fp)) == -1){
+            print("error reading line");
+            return false; 
+        }
+
+        aux= read_server_info(line);
+        temp=aux;
+        temp->next= aux;
+
+        printf("%d  temp: %s, aux: %s, config server: %s\n",i, temp->name, aux->name, config->server_info->name);
+
+
+    }
+
+    temp->next=NULL;
+
+    print("printing struct server node");
+    print(config->server_info->name);
+    server_node * check= config->server_info;
+
+    print(config->server_info->name);
+    print(check->name);
+    /*
+    i=0;
+
+    while(check!=NULL && i<5){
+        print(check->name);
+        check=check->next;
+        i++;
+    }
+    */
+
+    print("done reading success");
+
+    fclose(fp);
+    free(temp);
+    free(check);
+
+    if (line)
+        free(line);
+
+
+    print("leaving config");
+    return true;
+
+
+}
+
 bool read_config(char * config_file) {
     
     /*
@@ -50,7 +194,11 @@ bool read_config(char * config_file) {
     
     print("READING CONFIG FILE");
     FILE * fi = fopen(dir, "r");
-    */
+   
+
+
+
+
 
 
 
@@ -74,7 +222,7 @@ bool read_config(char * config_file) {
     SERVER_2,150,200
     SERVER_3,180,200
 
-    */
+    
 
     print("1");
     int temp,i;
@@ -126,6 +274,7 @@ bool read_config(char * config_file) {
     fclose(fi);
 
     config = config_temp;
+    */
 
     return true;
 }
@@ -133,7 +282,7 @@ bool read_config(char * config_file) {
 
 void start(char * config_file){
 
-    if(!read_config(config_file)){
+    if(!read_config_by_line(config_file)){
         print("ERROR READING CONFIG FILE, LEAVING");
         end(EXIT_FAILURE);
     }
