@@ -117,37 +117,30 @@ bool read_config_by_line(char * config_file){
 
 
     print("reading the server info now");
-    server_node * temp = (server_node *) malloc(sizeof(server_node));
+    
+        
     server_node * aux = (server_node *) malloc(sizeof(server_node));
-
-    if((read = getline(&line, &len, fp)) == -1){
-            print("error reading line");
-            return false; 
-        }
-
-    aux= read_server_info(line);
-    config->server_info= aux;
-    i=0;
-
-    printf("%d  temp: %s, aux: %s, config server: %s\n",i, temp->name, aux->name, config->server_info->name);
+    server_node * temp = (server_node *) malloc(sizeof(server_node));
+	config->server_info=aux;
 
 
-    for(i=1; i< v3; i++){
+    for(i=0; i< v3; i++){
         if((read = getline(&line, &len, fp)) == -1){
             print("error reading line");
             return false; 
         }
-
-        aux= read_server_info(line);
-        temp=aux;
-        temp->next= aux;
+        
+        temp= read_server_info(line);
+        temp->next = (server_node *) malloc(sizeof(server_node));
+        temp= temp->next;
+	
 
         printf("%d  temp: %s, aux: %s, config server: %s\n",i, temp->name, aux->name, config->server_info->name);
 
 
     }
 
-    temp->next=NULL;
+    //temp->next=NULL;
 
     print("printing struct server node");
     print(config->server_info->name);
@@ -168,7 +161,6 @@ bool read_config_by_line(char * config_file){
     print("done reading success");
 
     fclose(fp);
-    free(temp);
     free(check);
 
     if (line)

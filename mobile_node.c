@@ -29,7 +29,7 @@
 
 int debug;
 
-int print(char * message){
+void print(char * message){
     if(debug) printf("DEBUG: %s\n", message);
 }
 
@@ -62,12 +62,13 @@ int main(int argc, char *argv[]){
 
     if (fd < 0) {
         printf("CANNOT OPEN PIPE FOR WRITING\n");
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
+        return 0;
     }
 
     for(i=0; i<total_tasks; i++){
         //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-        fprintf(buffer, "%d:%d:%d\n", i, instructions, max_time_task);
+        sprintf(buffer, "%d:%d:%d\n", i, instructions, max_time_task);
         write(fd, buffer, strlen(buffer)+1);
         print(buffer);
 
@@ -77,7 +78,8 @@ int main(int argc, char *argv[]){
     
     fclose(fd);
     print("ended the program");
-    exit(EXIT_SUCCESS);
+    //exit(EXIT_SUCCESS);
+    return 0;
 }
 
 #endif
