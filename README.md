@@ -9,7 +9,7 @@ Projeto SO 2021/22
 | Defesa | 16/05/2021 a	03/06/2021 |
 
 Important stuff:
-[Relatório](https://www.beeg.com/)
+[Relatório](https://docs.google.com/document/d/1tC55xaVY_QENM3Livz2rrTaNydmLdTHq6Gej8J2ZANE/edit)
 
 Ana Beatriz Marques 2018274233
 
