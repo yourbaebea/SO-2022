@@ -30,7 +30,8 @@ void * cpu(void* cpu_shm){
 
 //TODO
 void edge_server(int id) {
-    write_log("EDGE SERVER");
+    write_log("PROCESS EDGE SERVER CREATED");
+    print("edge server %d", id);
 
     //inform Maintenance Manager by mq????
 

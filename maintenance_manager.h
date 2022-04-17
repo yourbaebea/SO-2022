@@ -65,12 +65,13 @@ bool check(server_struct * s){
 
 //TODO
 void maintenance_manager() {
+	write_log("PROCESS MAINTENANCE MANAGER CREATED");
 
     int maintenance_time, i;
     server_struct * current=NULL;
 
     while(1){
-        if(check_status()==false) break;
+        if(simulation_status()==false) break;
         current= shm->server;
 
         //only try to do maintenance in random server

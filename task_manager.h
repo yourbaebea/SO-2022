@@ -6,14 +6,6 @@
 // wait_to_exit(); update shm status to -1 /waiting for things to end
 // print_stats();
 
-bool check_status(){
-    int temp;
-    temp=shm->status;
-    //TODO missing mutex
-
-    if (temp>0) return true;
-    return false;
-}
 
 bool task_format(char * buffer){
     char temp [BUF_SIZE];
@@ -87,7 +79,7 @@ thread dispatcher
 
     while(1){
 
-        if(check_status()==false) break;
+        if(simulation_status()<0) break;
 
         for (int n = 0; read(fd, buffer, BUF_SIZE) && n > 0 && buffer[n] != '\0' && buffer[n] != '\n'; n = read(fd, buffer, sizeof(char)));
         if (strcmp(buffer, "EXIT") == 0) {
@@ -132,9 +124,11 @@ temporais de execução menor têm prioridade. O tempo máximo para execução �
 máximo que a tarefa pode demorar até ser completamente executada, desde a altura em
 que chegou ao Task Manager.
     */
+    
+    print("THREAD SCHEDULER CREATED");
 
     while(1){
-        print("inside scheduler");
+        //print("inside scheduler");
 
 
         //TODO
@@ -143,7 +137,7 @@ que chegou ao Task Manager.
 
 
 
-        usleep(1000);
+        usleep(10000);
     }
 
 
@@ -164,9 +158,11 @@ a tarefa, ela já não terá validade, pelo que a tarefa é eliminada e isso é 
 thread dispatcher é ativada sempre que 1 vCPU fica livre e desde que existam tarefas por
 realizar.
     */
+    
+    print("THREAD DISPACHER CREATED");
 
    while(1){
-        print("inside dispacher");
+        //print("inside dispacher");
 
 
         //TODO
@@ -175,7 +171,7 @@ realizar.
 
 
 
-        usleep(1000);
+        usleep(10000);
     }
 
 
@@ -188,24 +184,22 @@ realizar.
 //TODO
 void task_manager() {
     write_log("PROCESS TASK_MANAGER CREATED");
-    printf("TASKMANAGER PID: %d", getpid());
+    //print("TASKMANAGER PID: %d", getpid());
 
     //signal(SIGUSR1, print_stats);
 
     //create PROCESS of Servers, check shm for number and name
     //fork()
-    int i;
+    int i,j=0;
     for(i=0; i< config->edge_server_number; i++){
         if(fork()){
             edge_server(i);
         }
-
+     
     }
-
+    
     
     read_pipe();
-
-    print("creating threads: scheduler and dispacher");
 
     pthread_t thread_scheduler, thread_dispacher;
     
@@ -213,7 +207,8 @@ void task_manager() {
     pthread_create(&thread_scheduler, NULL, scheduler, NULL);
     pthread_create(&thread_dispacher, NULL, dispacher, NULL);
 
-
+	while(1){
+	}
 
 
 

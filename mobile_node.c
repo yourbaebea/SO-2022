@@ -26,11 +26,18 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdarg.h>
+
+#define BUF_SIZE 2048
 
 int debug;
 
-void print(char * message){
-    if(debug) printf("DEBUG: %s\n", message);
+void print(char * message,...){
+    if(debug){
+    va_list args;
+    va_start(args,message);
+    printf("DEBUG: %s\n", message);
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -57,17 +64,24 @@ int main(int argc, char *argv[]){
     int fd, i;
     char buffer[1024];
 
-    print("MOBILE NODE");
+    print("STARTED MOBILE NODE");
     fd = open("TASK_PIPE", O_WRONLY);
 
     if (fd < 0) {
         printf("CANNOT OPEN PIPE FOR WRITING\n");
         exit(EXIT_FAILURE);
     }
+    
+    int pid= getpid();
+    
+    //printf("mobile node with pid: %d", getpid());
+    
+    
 
     for(i=0; i<total_tasks; i++){
         //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-        fprintf(buffer, "%d:%d:%d\n", i, instructions, max_time_task);
+
+        sprintf(buffer, "%d%d:%d:%d\n", pid, i, instructions, max_time_task);
         write(fd, buffer, strlen(buffer)+1);
         print(buffer);
 
@@ -75,7 +89,7 @@ int main(int argc, char *argv[]){
         usleep(interval);
     }
     
-    fclose(fd);
+    close(fd);
     print("ended the program");
     //exit(EXIT_SUCCESS);
     return 0;

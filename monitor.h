@@ -5,7 +5,7 @@
 
 //TODO
 void monitor() {
-    write_log("INSIDE MONITOR");
+    write_log("PROCESS MONITOR CREATED");
 
     while(1){
         //update cpu status shm depending on lvl

@@ -26,6 +26,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 //---------------------- include other files ---------------------------------
 
@@ -46,6 +47,7 @@ typedef struct{
     int maintenance_time;
 } msg_struct;
 
+// Config struct
 typedef struct server_node_aux server_node_next;
 typedef struct server_node_aux {
     char * name;
@@ -55,7 +57,6 @@ typedef struct server_node_aux {
 }server_node;
 
 
-// Config struct
 typedef struct{
     int queue_pos;
     int max_wait;
@@ -63,7 +64,7 @@ typedef struct{
     server_node * server_info;
 } config_struct;
 
-
+//cpu struct
 typedef struct{
     pthread_mutex_t cpu_mutex;
     int mips;
@@ -90,23 +91,47 @@ typedef struct server_struct_aux{
 
 } server_struct;
 
+//stats
+typedef struct{
+    int tasks_total;//=0;
+    int tasks_done;//=0;
+    int total_time_response;//=0;
+    int tasks_refused;//=0;
+    int * tasks_by_server; //(int*) malloc(sizeof(int) * size)
+    int * op_by_server; //(int*) malloc(sizeof(int) * size)
+
+}stats_struct;
+
 
 // SHM struct
 typedef struct{
     int time;
     int status;//=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
 
-    int tasks_total;//=0;
-    int tasks_done;//=0;
-    int total_time_response;//=0;
-    int tasks_refused;//=0;
-
+    stats_struct * stats;
+    
     //servers array data pointer
     server_struct * server;
 
-    pthread_mutex_t time_mutex, log_mutex, stats_mutex, servers_array_mutex;
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex;
+    //whenever we update the struct we need to lock this mutex
 
 } shm_struct;
+
+// Task struct
+typedef struct task_struct_aux task_struct_next;
+typedef struct task_struct_aux{
+    int status; //done, rejected, waiting
+    int id;
+    int instructions;
+    int time_max;
+    int time_start;
+    int time_waiting; //when accepted in cpu, do currenttime- creation time
+    
+    task_struct_next * next;
+
+}task_struct;
+
 
 
 //---------------------- global vars ---------------------------------
@@ -118,13 +143,10 @@ shm_struct * shm;
 config_struct * config;
 
 //TODO
-int mqid, shmid, servers_shmid; // Message Queue | Shared memory
+int mqid;
+int shmid;
 shm_struct * shm;                // Shared memory shm_struct struct
 config_struct * config;          // Config struct
-pthread_mutexattr_t attrmutex;  // Mutexes attributes
-pthread_condattr_t cattr;       // Condition variables attributes
-sigset_t block_sigint;          // Signal set
-pid_t ppid;
 
 pthread_t thread_time;          // Update time in shared memory
 
@@ -134,13 +156,11 @@ pthread_t thread_time;          // Update time in shared memory
 //---------------------- functions ---------------------------------
 
 //main
-void print(char * message);
+void print(char * message,...);
 void write_log(char * message);
 void clear_log();
 bool read_config(char * config_file);
 server_node * read_server_info(char * line);
-bool read_config_by_line(char * config_file);
-void add_node(server_node * temp);
 void start(char * config_file);
 void end(int status);
 
@@ -149,11 +169,12 @@ bool check(server_struct * s);
 void maintenance_manager();
 void edge_server(int id);
 void monitor();
-bool check_status();
+int simulation_status();
 bool task_format(char * buffer);
 bool create_task(int id,int instructions, int max_time);
 void read_pipe();
 void task_manager();
 void * cpu(void* cpu_shm);
+void * time_update();
 
 #endif
