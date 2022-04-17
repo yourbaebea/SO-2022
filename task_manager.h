@@ -120,6 +120,70 @@ thread dispatcher
 
 }
 
+void * scheduler(){
+    /*
+        Uma thread scheduler analisa as várias tarefas na fila e atribui-lhes prioridades (1=
+máxima prioridade). Sempre que um pedido novo chega e é colocado na fila, estas
+prioridades são reavaliadas. Se durante a avaliação forem detetadas tarefas cujo prazo
+máximo de execução já tenha passado, essas tarefas são eliminadas e essa informação
+será escrita no log. O critério para a prioridade é baseado no tempo máximo para
+execução que a tarefa tem e no seu tempo de chegada à fila. I.e., tarefas com limites
+temporais de execução menor têm prioridade. O tempo máximo para execução é o tempo
+máximo que a tarefa pode demorar até ser completamente executada, desde a altura em
+que chegou ao Task Manager.
+    */
+
+    while(1){
+        print("inside scheduler");
+
+
+        //TODO
+
+
+
+
+
+        usleep(1000);
+    }
+
+
+
+    pthread_exit(NULL);
+    return NULL;
+
+}
+
+void * dispacher(){
+    /*
+    Uma thread dispatcher pega na tarefa mais prioritária e verifica se é possível executá-la
+no tempo disponível. I.e., verifica se o tempo que leva a executar em qualquer um dos
+vCPU disponível dos Edge Server cumpre o tempo máximo limite indicado - tem de ter
+em conta o tempo que ainda resta até ao limite temporal indicado e o tempo que levaria
+a processar no vCPU disponível. Se não cumprir o tempo limite, não vale a pena executar
+a tarefa, ela já não terá validade, pelo que a tarefa é eliminada e isso é escrito no log. A
+thread dispatcher é ativada sempre que 1 vCPU fica livre e desde que existam tarefas por
+realizar.
+    */
+
+   while(1){
+        print("inside dispacher");
+
+
+        //TODO
+
+
+
+
+
+        usleep(1000);
+    }
+
+
+
+    pthread_exit(NULL);
+    return NULL;
+
+}
 
 //TODO
 void task_manager() {
@@ -138,28 +202,23 @@ void task_manager() {
 
     }
 
-
-    /* 2 threads to manage the list
-    Uma thread scheduler analisa as várias tarefas na fila e atribui-lhes prioridades (1=
-máxima prioridade). Sempre que um pedido novo chega e é colocado na fila, estas
-prioridades são reavaliadas. Se durante a avaliação forem detetadas tarefas cujo prazo
-máximo de execução já tenha passado, essas tarefas são eliminadas e essa informação
-será escrita no log. O critério para a prioridade é baseado no tempo máximo para
-execução que a tarefa tem e no seu tempo de chegada à fila. I.e., tarefas com limites
-temporais de execução menor têm prioridade. O tempo máximo para execução é o tempo
-máximo que a tarefa pode demorar até ser completamente executada, desde a altura em
-que chegou ao Task Manager.
-● Uma thread dispatcher pega na tarefa mais prioritária e verifica se é possível executá-la
-no tempo disponível. I.e., verifica se o tempo que leva a executar em qualquer um dos
-vCPU disponível dos Edge Server cumpre o tempo máximo limite indicado - tem de ter
-em conta o tempo que ainda resta até ao limite temporal indicado e o tempo que levaria
-a processar no vCPU disponível. Se não cumprir o tempo limite, não vale a pena executar
-a tarefa, ela já não terá validade, pelo que a tarefa é eliminada e isso é escrito no log. A
-thread dispatcher é ativada sempre que 1 vCPU fica livre e desde que existam tarefas por
-realizar.
-    */
-
+    
     read_pipe();
+
+    print("creating threads: scheduler and dispacher");
+
+    pthread_t thread_scheduler, thread_dispacher;
+    
+
+    pthread_create(&thread_scheduler, NULL, scheduler, NULL);
+    pthread_create(&thread_dispacher, NULL, dispacher, NULL);
+
+
+
+
+
+    wait(NULL);
+    //keep the process alive untill the threads end
 
 }
 

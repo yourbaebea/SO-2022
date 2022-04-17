@@ -46,7 +46,7 @@ typedef struct{
     int maintenance_time;
 } msg_struct;
 
-typedef struct server_node_aux * server_node_next;
+typedef struct server_node_aux server_node_next;
 typedef struct server_node_aux {
     char * name;
     int cpu1;
@@ -65,19 +65,18 @@ typedef struct{
 
 
 typedef struct{
-    pthread_t thread;
-    pthread_cond_t cond_var;
+    pthread_mutex_t cpu_mutex;
     int mips;
     bool active;
+    bool busy;
     //missing stuff?
 } cpu_struct;
 
 
 
 // servers structs
-typedef struct server_struct_aux * server_struct_next;
+typedef struct server_struct_aux server_struct_next;
 typedef struct server_struct_aux{
-    //pthread_cond_t cond_var; // can we still use this???
     int state;//= status.NORMAL;
     cpu_struct cpu1;
     cpu_struct cpu2;
@@ -105,10 +104,7 @@ typedef struct{
     //servers array data pointer
     server_struct * server;
 
-    pthread_mutex_t log_mutex;
-
-    // Mutexes ???????
-    //pthread_mutex_t end_mutex, runways_mutex, time_mutex, log_mutex, stdout_mutex, stats_mutex, servers_array_mutex;
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex, servers_array_mutex;
 
 } shm_struct;
 
@@ -118,7 +114,7 @@ bool debug=false;
 enum status{ NORMAL, HIGH, STOPPED}; //how to set the server status server.status= status.NORMAL
 
 FILE* log_file;                 // Log file pointer
-shm_struct* shm;
+shm_struct * shm;
 config_struct * config;
 
 //TODO
@@ -129,6 +125,8 @@ pthread_mutexattr_t attrmutex;  // Mutexes attributes
 pthread_condattr_t cattr;       // Condition variables attributes
 sigset_t block_sigint;          // Signal set
 pid_t ppid;
+
+pthread_t thread_time;          // Update time in shared memory
 
 
 
@@ -142,6 +140,7 @@ void clear_log();
 bool read_config(char * config_file);
 server_node * read_server_info(char * line);
 bool read_config_by_line(char * config_file);
+void add_node(server_node * temp);
 void start(char * config_file);
 void end(int status);
 
@@ -155,5 +154,6 @@ bool task_format(char * buffer);
 bool create_task(int id,int instructions, int max_time);
 void read_pipe();
 void task_manager();
+void * cpu(void* cpu_shm);
 
 #endif

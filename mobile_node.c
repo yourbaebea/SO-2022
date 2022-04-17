@@ -62,13 +62,12 @@ int main(int argc, char *argv[]){
 
     if (fd < 0) {
         printf("CANNOT OPEN PIPE FOR WRITING\n");
-        //exit(EXIT_FAILURE);
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     for(i=0; i<total_tasks; i++){
         //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-        sprintf(buffer, "%d:%d:%d\n", i, instructions, max_time_task);
+        fprintf(buffer, "%d:%d:%d\n", i, instructions, max_time_task);
         write(fd, buffer, strlen(buffer)+1);
         print(buffer);
 

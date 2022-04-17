@@ -44,14 +44,14 @@ server_node * read_server_info(char * line){
 
     strcpy(buffer_line,line);
     buffer_line[strcspn(buffer_line, "\n")] = 0;
-    print(buffer_line);
+    //print(buffer_line);
 
     if(sscanf(buffer_line, "%[^,],%d,%d", name, &cpu1, &cpu2)==-1){
         print("error in reading sscanf");
         return false; 
     }
 
-    printf("nova linha lida: s %s cpu %d cpu %d\n", name, cpu1, cpu2);
+    //printf("nova linha lida: s %s cpu %d cpu %d\n", name, cpu1, cpu2);
 
 
     //assign the config file
@@ -65,6 +65,35 @@ server_node * read_server_info(char * line){
 }
 
 
+void add_node(server_node * temp){
+    server_node * p=(server_node *) malloc(sizeof(server_node));
+
+    printf("list\n");
+    
+    if(config->server_info == NULL){
+        config->server_info = temp;
+        printf("FIRST INSERT list: %s\n", config->server_info->name);
+    }
+    else{
+        p  = config->server_info;
+        while(p->next != NULL){
+            printf("list: %s\n", p->name);
+            p = p->next;
+        }
+        p->next = temp;
+        p = p->next;
+        printf("list: %s\n", p->name);
+    }
+
+}
+
+void print_node(server_node * temp){
+    if(temp==NULL) printf("temp node is null something is wrong");
+    else printf("node: %s %d %d\n", temp->name, temp->cpu1, temp->cpu2);
+}
+
+
+
 bool read_config_by_line(char * config_file){
     FILE * fp;
     char * line = NULL;
@@ -75,7 +104,7 @@ bool read_config_by_line(char * config_file){
 
     //config
     config = (config_struct *) malloc(sizeof(config_struct));
-    config->server_info = (server_node *) malloc(sizeof(server_node));
+    //config->server_info = (server_node *) malloc(sizeof(server_node));
 
 
 
@@ -108,166 +137,64 @@ bool read_config_by_line(char * config_file){
     }
     else return false;
 
-    //printf("v1: %d v2: %d v3: %d\n", v1,v2,v3);
+    printf("v1: %d v2: %d v3: %d\n", v1,v2,v3);
 
     if(v3<=2){
         print("number of servers <=2");
         return false;
     }
 
-
-    print("reading the server info now");
     
-        
-    server_node * aux = (server_node *) malloc(sizeof(server_node));
-    server_node * temp = (server_node *) malloc(sizeof(server_node));
-	config->server_info=aux;
-
+    printf("%d\n", v3);
+    config->server_info=NULL;
 
     for(i=0; i< v3; i++){
+        printf("%d\n", i);
         if((read = getline(&line, &len, fp)) == -1){
             print("error reading line");
             return false; 
         }
-        
-        temp= read_server_info(line);
-        temp->next = (server_node *) malloc(sizeof(server_node));
-        temp= temp->next;
-	
 
-        printf("%d  temp: %s, aux: %s, config server: %s\n",i, temp->name, aux->name, config->server_info->name);
+        //print("printing struct server node");
+        server_node * temp = read_server_info(line);
+
+        print("we are adding this");
+        print_node(temp);
+
+
+        if(config->server_info == NULL){
+            config->server_info = (server_node *) malloc(sizeof(server_node));
+            config->server_info = temp;
+            printf("first node: %s\n", temp->name);
+        }
+        else{
+            server_node * p;
+            p  = config->server_info;
+            while(p->next != NULL){
+                printf("middle: %s\n", p->name);
+                p = p->next;
+            }
+            p->next = temp;
+            p = p->next;
+            printf("adding this to the list: %s\n", p->name);
+
+        }
+
+
+
+
+
 
 
     }
-
-    //temp->next=NULL;
-
-    print("printing struct server node");
-    print(config->server_info->name);
-    server_node * check= config->server_info;
-
-    print(config->server_info->name);
-    print(check->name);
-    /*
-    i=0;
-
-    while(check!=NULL && i<5){
-        print(check->name);
-        check=check->next;
-        i++;
-    }
-    */
-
-    print("done reading success");
+   
+    //print("done reading success");
 
     fclose(fp);
-    free(check);
 
-    if (line)
-        free(line);
+    if (line) free(line);
 
-
-    print("leaving config");
-    return true;
-
-
-}
-
-bool read_config(char * config_file) {
-    
-    /*
-    char dir[BUF_SIZE];
-
-    strcpy(dir, PATH);
-    strcat(dir, config_file); 
-    print(PATH);
-    print(config_file);
-    print(dir);
-    
-    print("READING CONFIG FILE");
-    FILE * fi = fopen(dir, "r");
-   
-
-
-
-
-
-
-
-    print("CHECK THIS\n\n\n error \n\n\n READING CONFIG FILE");
-    FILE * fi = fopen(config_file, "r");
-
-    if (fi == NULL){
-        return false;
-    }
-    /*
-    QUEUE_POS - número de slots na fila interna do Task Manager
-    MAX_WAIT - tempo máximo para que o processo Monitor eleve o nível de performance dos
-    Edge Servers (em segundos)
-    EDGE_SERVER_NUMBER - número de edge servers (>=2)
-    Nome do servidor de edge e capacidade de processamento de cada vCPU em MIPS
-    Exemplo do ficheiro de configurações:
-    50
-    2
-    3
-    SERVER_1,100,200
-    SERVER_2,150,200
-    SERVER_3,180,200
-
-    
-
-    print("1");
-    int temp,i;
-
-    //config
-    config_struct * config_temp;
-
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
-
-    fscanf(fi, "%d\n%d\n%d\n", config_temp->queue_pos,config_temp->max_wait, temp);
-
-    printf("received: %d %d %d\n", config_temp->queue_pos, config_temp->max_wait, temp);
-
-    if(temp<2) return false;
-
-    server_node * server_temp;
-    server_node * save;
-    save =config_temp->server_info ;
-
-    print("2");
-
-    char name [BUF_SIZE];
-
-    for(i=0; i<temp; i++){
-        read = getline(&line, &len, fi);
-        //if(fscanf(fi, "%s,%d,%d\n", name, &server_temp->cpu1, &server_temp->cpu2)!=3) return false;
-        fscanf(line, "%s,%d,%d\n", name, &server_temp->cpu1, &server_temp->cpu2);
-        printf("received: %s ; %d  ; %d\n", name, server_temp->cpu1, server_temp->cpu2 );
-        server_temp->name=name;
-        save = server_temp;
-        save->next=save;
-        server_temp=NULL;
-        save=NULL;
-    }
-
-    print("3");
-
-    config_temp->edge_server_number=temp;
-
-    if(debug){
-        printf("just to check reading config");
-        for(i=0; i<temp; i++) printf(" server name %s, cpu1 %d, cpu2 %d",server_temp->name, server_temp->cpu1, server_temp->cpu2 );
-    }
-
-
-    fclose(fi);
-
-    config = config_temp;
-    */
-
+    //print("leaving config");
     return true;
 }
 
@@ -308,11 +235,31 @@ void start(char * config_file){
 
     // Create Shared memory
     print("CREATE SHM");
-    if((shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT|0700)) == -1) {
+   
+    shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT | 0600);
+    if (shmid < 0) {
+        print("ERROR IN CREATE SHMID");
+        end(EXIT_FAILURE);
+    }
+
+    shm = (shm_struct*) shmat(shmid, NULL, 0);
+    if (shm == (shm_struct*)-1) {
         print("ERROR IN CREATE SHM");
         end(EXIT_FAILURE);
     }
-    shm = shmat(shmid, NULL, 0);
+
+    //this should allocate memory for all needed structs without creating a new shared memory
+	/*
+    shm->teams = (Team *) malloc(config.teams *sizeof(Team));
+    for(int i=0; i<config.teams;i++){
+     shm->teams[i].list_of_cars = (Car *) malloc(config.max_cars_per_team *sizeof(Car));
+     }
+
+*/
+
+
+
+
 
     //Create Shared memory for servers
     //TODO
@@ -322,7 +269,7 @@ void start(char * config_file){
 
     if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0700)) == -1) {
         printf ("Error on MQ creation\n");
-        end(1);
+        end(EXIT_FAILURE);
     }
 
    
@@ -334,6 +281,33 @@ void end(int status){
 
     exit(status);
 }
+
+
+
+void *time_update() {
+    //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
+    print("thread updating time");
+    
+    pthread_mutex_unlock(&shm->time_mutex);
+
+    while (simulation_status() > 0) {
+        pthread_mutex_lock(&shm->time_mutex);
+        shm->time++;
+        pthread_mutex_unlock(&shm->time_mutex);
+        usleep(1000);
+    }
+
+    pthread_exit(NULL);
+    return NULL;
+}
+/* change this COPY PASTE IS NOT OKAY
+*/
+
+int simulation_status(){
+    //do i need the mutex here?
+    return shm->status;
+}
+
 
 
 int main(int argc, char *argv[]){
@@ -364,11 +338,22 @@ int main(int argc, char *argv[]){
         print("SYSTEM MANAGER AFTER FORKS");
         //this continues to be the SYSTEM MANAGER
 
+        pthread_t thread_time;
+
+        pthread_create(&thread_time, NULL, time_update, NULL);
+        wait(NULL);
+
+
+
+
         //update time and wait for the signals
         //signal(SIGINT, terminate);
         //signal (SIGTSTP,print_stats);
         end(EXIT_SUCCESS);
     }
+
+    return 0;
 }
+
 
 #endif
