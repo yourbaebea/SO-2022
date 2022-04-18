@@ -6,9 +6,9 @@
 
 
 void * cpu(void* cpu_shm){
-    cpu_struct * cpu;
+    //cpu_struct * cpu;
 
-    cpu = (cpu_struct *) cpu_shm;
+    //cpu = (cpu_struct *) cpu_shm;
 
     //do stuff with cpu;
     while(1){

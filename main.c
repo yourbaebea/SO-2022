@@ -175,24 +175,33 @@ void start(char * config_file){
         print("ERROR IN CREATE SHM");
         end(EXIT_FAILURE);
     }
+    int i;
+       
+    server_struct * p;
+    server_node * paux;
     
-
-    //this should allocate memory for all needed structs without creating a new shared memory
-	/*
-    shm->teams = (Team *) malloc(config.teams *sizeof(Team));
-    for(int i=0; i<config.teams;i++){
-     shm->teams[i].list_of_cars = (Car *) malloc(config.max_cars_per_team *sizeof(Car));
-     }
-
-*/
-
-
-
-
-
-    //Create Shared memory for servers
-    //TODO
-    //Create shm for list of tasks
+    for(i=0; i<config->edge_server_number; i++){
+    	server_struct * temp= (server_struct *) malloc(sizeof(server_struct));
+    	
+    	temp->cpu1= (cpu_struct *) malloc(sizeof(cpu_struct));
+    	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
+    	temp->cpu1->mips= paux->cpu1;
+        temp->cpu2->mips= paux->cpu2;
+    	
+        if(i==0){
+            shm->server = temp;
+            p  = shm->server;
+            paux= config->server_info;           
+        }
+        else{
+            p->next = temp;
+            p = p->next;
+            paux=paux->next;
+        }
+    }
+    
+   
+    //shm vars need to be updated with the shm mutex
     //TODO
 
 
@@ -203,10 +212,6 @@ void start(char * config_file){
 
    
 }
-
-
-
-
 
 
 int main(int argc, char *argv[]){
@@ -238,29 +243,25 @@ int main(int argc, char *argv[]){
         //this continues to be the SYSTEM MANAGER
 
 
-        
         print("before time");
 
         pthread_create(&thread_time, NULL, time_update, NULL);
         
+        while(1){
         
-        print("after time");
-        
-        wait(NULL);
-        
-        print("after waiting");
-
-
-
-
+        //idk what the main does after this?
+        //maybe replace thread time with this
+        }
+	//wait(NULL);
         //update time and wait for the signals
         //signal(SIGINT, terminate);
         //signal (SIGTSTP,print_stats);
+        
 
     }
+    
 
     return 0;
 }
-
 
 #endif

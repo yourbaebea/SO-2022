@@ -62,9 +62,10 @@ void terminate(){
 
 void print_stats(){
 	char stats[10000];
-	char buffer[BUF_SIZE];
+	
 	strcpy(stats, "\tSTATISTICS\n");
 	/*
+	char buffer[BUF_SIZE];
 	pthread_mutex_lock(&shm->stats_mutex); // not sure if its absolutely needed here
 
 
@@ -98,14 +99,43 @@ void print_stats(){
 
 
 void end(int status){
+	int i;
     print("ENDING THE SIMULATION.......");
     
+    //tasks -> delete all tasks on linked list, doesnot need to update stats
+    //TODO
+    
+    //log
     fclose(fopen(LOG_FILE, "w"));
+    
+    //pipe
+    //TODO
+    
+    //shm -> servers, cpus, stats and shm
+    server_struct * temp= shm->server;
+    server_struct * p;
+    
+    for(i=0; i<config->edge_server_number; i++){
+    	p=temp->next;
+    	free(temp->cpu1);
+    	free(temp->cpu2);
+    	free(temp);
+    	temp=p;
+    }
+    
+    free(shm->stats->tasks_by_server);
+    free(shm->stats->op_by_server);
+    free(shm->stats);
+    free(shm);
+    
+    
+    //config
     //TODO
     
     
+    
+    
     print("ALL RESOURCES WERE CLEARED, EXITING");
-
     exit(status);
 }
 
@@ -113,21 +143,23 @@ void end(int status){
 
 void * time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
-    print("thread updating time");
     
     //TODO this thread is still not working idk whats wrong
     
+    pthread_mutex_lock(&shm->time_mutex);
+    print("thread updating time started");
+    shm->time=0;
     pthread_mutex_unlock(&shm->time_mutex);
 
     while (simulation_status() > 0) {
-    	print("thread updating time");
+    	print("time: %d", shm->time);
         pthread_mutex_lock(&shm->time_mutex);
         shm->time++;
         pthread_mutex_unlock(&shm->time_mutex);
-        usleep(1000);
+        sleep(1);
     }
     
-    printf("\n\nHEREsimulation status is %d", shm->status);
+    print("\n\nHEREsimulation status is %d", shm->status);
 
     pthread_exit(NULL);
     return NULL;

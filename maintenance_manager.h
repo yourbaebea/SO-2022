@@ -57,7 +57,8 @@ int generate(int min, int max){
 }
 
 bool check(server_struct * s){
-
+//TODO
+	return true;
 }
 
 
@@ -66,31 +67,58 @@ bool check(server_struct * s){
 //TODO
 void maintenance_manager() {
 	write_log("PROCESS MAINTENANCE MANAGER CREATED");
-
-    int maintenance_time, i;
-    server_struct * current=NULL;
+    int maintenance_time;
+    long maintenance;
+    int i, sum;
+    bool okay=true;
+    server_struct * current;
+    
+    msg_struct msg;
 
     while(1){
+    	printf("inside maintenance manager");
         if(simulation_status()==false) break;
+        
+        maintenance=generate(0, config->edge_server_number-1);
         current= shm->server;
+        okay=true;
 
-        //only try to do maintenance in random server
-        i=0;
-        while(i<config->edge_server_number){
-            //check(current);
-            //send message in mq
-            /*
-                if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
-            write_log("Error sending message to message queue\n");
-            end(EXIT_FAILURE);
+        //try to do maintenance in random server
+        for(i=0, sum=0 ;i<config->edge_server_number;i++){
+            
+            if(check(current)==true){
+            	sum++;
+            	if(i==maintenance){ //when we are trying to do maintenance on an already on maintenance server
+            	okay=false;
+            }
+              
         }
-            */
-            //TODO
-        }
-
-        usleep(generate(1,5)*1000); //interval between maintenance
+        
+        //if all servers are in maintenance
+        if(sum>= config->edge_server_number-1) okay=false;
+        //if not all servers are in maintenance
+                   
+       if(okay==true){
+       	maintenance_time=generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
+       	msg = (msg_struct) {(long) maintenance, maintenance_time};
+       	
+       	if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
+		    write_log("Error sending message to message queue\n");
+		    end(EXIT_FAILURE);
+		}
+       }
+       else{
+       print("maintenance tried server %d, couldnt", maintenance);
+       }
+           
+                
+ 
+        sleep(generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM)*1); //interval between maintenance
 
     }
+    
+    //free(current);
+    //free(msg);
 
     print("leaving maintenance");
 

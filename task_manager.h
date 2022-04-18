@@ -137,7 +137,7 @@ que chegou ao Task Manager.
 
 
 
-        usleep(10000);
+        sleep(1);
     }
 
 
@@ -171,7 +171,7 @@ realizar.
 
 
 
-        usleep(10000);
+        sleep(1);
     }
 
 
@@ -190,7 +190,8 @@ void task_manager() {
 
     //create PROCESS of Servers, check shm for number and name
     //fork()
-    int i,j=0;
+    int i;
+    //j=0;
     for(i=0; i< config->edge_server_number; i++){
         if(fork()){
             edge_server(i);
@@ -198,8 +199,7 @@ void task_manager() {
      
     }
     
-    
-    read_pipe();
+   
 
     pthread_t thread_scheduler, thread_dispacher;
     
@@ -207,10 +207,8 @@ void task_manager() {
     pthread_create(&thread_scheduler, NULL, scheduler, NULL);
     pthread_create(&thread_dispacher, NULL, dispacher, NULL);
 
-	while(1){
-	}
-
-
+	read_pipe();
+	
 
     wait(NULL);
     //keep the process alive untill the threads end

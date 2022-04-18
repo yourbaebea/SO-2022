@@ -36,6 +36,8 @@
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
 #define BUF_SIZE 1024
+#define MAINTENANCE_MINIMUM 1
+#define MAINTENANCE_MAXIMUM 5
 #define PATH "C:\\Users\\Ana\\Desktop\\SO\\project\\"
 
 //---------------------- structs ---------------------------------
@@ -79,8 +81,8 @@ typedef struct{
 typedef struct server_struct_aux server_struct_next;
 typedef struct server_struct_aux{
     int state;//= status.NORMAL;
-    cpu_struct cpu1;
-    cpu_struct cpu2;
+    cpu_struct * cpu1;
+    cpu_struct * cpu2;
     int performance; //lvl of performance
     int active_cpus;//=1; //default value for number of cpu is 1
 
