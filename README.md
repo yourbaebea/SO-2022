@@ -3,8 +3,8 @@ Projeto SO 2021/22
 
 | METAS | data |
 | --- | --- |
-| Entrega intermédia | 04/04/2021- 10h00|
-| Defesa | Aulas PL da semana de	??? |
+| Entrega intermédia | 18/04/2021- 22h00|
+| Defesa | Aulas PL da semana de	18-24 |
 | Entrega final | 13/05/2021-22h00 |
 | Defesa | 16/05/2021 a	03/06/2021 |
 
