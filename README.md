@@ -1,5 +1,8 @@
 # Simulador para Offloading de Tarefas no Edge
 
+### Projecto SO 2021/22
+Ana Beatriz Marques 2018274233
+
 | METAS | data |
 | --- | --- |
 | Entrega intermédia | 18/04/2021- 22h00|
