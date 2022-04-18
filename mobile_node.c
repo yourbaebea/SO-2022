@@ -32,13 +32,18 @@
 
 int debug;
 
-void print(char * message,...){
+//just for debug of messages
+void print(char * message, ...){
     if(debug){
     va_list args;
     va_start(args,message);
-    printf("DEBUG: %s\n", message);
+    printf("DEBUG: ");
+    vprintf(message,args);
+    printf("\n");
+    va_end(args);
     }
 }
+
 
 int main(int argc, char *argv[]){
     if(argc <= 4){
@@ -47,6 +52,8 @@ int main(int argc, char *argv[]){
         return 0;
     }
     if((argc == 6) && strcmp(argv[5], "debug") == 0) debug = true;
+    
+    print("STARTED MOBILE NODE");
     
     int total_tasks, interval, instructions, max_time_task;
 
@@ -60,11 +67,16 @@ int main(int argc, char *argv[]){
         printf("WRONG FORMAT, ./mobile_node {total_tasks} {interval} {instructions} {max_time_task} [debug]\n");
         return 0;
     }
+    
+    int pid= getpid();
+    
+    print("mobile node with pid: %d", getpid());
+    print("mobile node:\ntotal tasks: %d\ninterval:%d\ninstructions%d\nmax time:%d", total_tasks,interval, instructions, max_time_task);
+    
 
     int fd, i;
     char buffer[1024];
 
-    print("STARTED MOBILE NODE");
     fd = open("TASK_PIPE", O_WRONLY);
 
     if (fd < 0) {
@@ -72,14 +84,11 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
     
-    int pid= getpid();
-    
-    //printf("mobile node with pid: %d", getpid());
-    
-    
+   
 
     for(i=0; i<total_tasks; i++){
         //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
+        print("pid=%d i=%d id=%d%d", pid, i, pid, i);
 
         sprintf(buffer, "%d%d:%d:%d\n", pid, i, instructions, max_time_task);
         write(fd, buffer, strlen(buffer)+1);
@@ -87,6 +96,7 @@ int main(int argc, char *argv[]){
 
 
         sleep(interval);
+    
     }
     
     close(fd);
