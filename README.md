@@ -27,7 +27,7 @@ Ana Beatriz Marques 2018274233
 - [ ] Criação do mobile node S
 - [ ] Leitura correta dos parâmetros da linha de comando
 - [ ] Geração e escrita das tarefas no named pipe
-- [ ] System Manager
+### System Manager
 - [ ] Arranque do simulador de offloading, leitura do ficheiro de configurações, validação dos dados do ficheiro e aplicação das configurações lidas. S
 - [ ] Criação da memória partilhada S
 - [ ] Criação do named pipe
