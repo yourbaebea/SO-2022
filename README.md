@@ -3,7 +3,8 @@
 ### Projecto SO 2021/22
 Ana Beatriz Marques 2018274233
 
-| METAS | data |
+## Metas
+|  | data |
 | --- | --- |
 | Entrega intermédia | 18/04/2021- 22h00|
 | Defesa | Aulas PL da semana de	18-24 |
