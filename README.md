@@ -8,10 +8,9 @@ Projeto SO 2021/22
 | Entrega final | 13/05/2021-22h00 |
 | Defesa | 16/05/2021 a	03/06/2021 |
 
-Important stuff:
+### Links
 [Relatório](https://docs.google.com/document/d/1tC55xaVY_QENM3Livz2rrTaNydmLdTHq6Gej8J2ZANE/edit)
-
-Ana Beatriz Marques 2018274233
+[Esquema](https://docs.google.com/presentation/d/190iKgZj00AvN4xIBbyooPCvG89EpxFZdq5zakP03UZo/edit#slide=id.g11b2811ab0c_0_9)
 
 ## run
 - make
