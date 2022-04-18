@@ -3,10 +3,7 @@
 #define TASK_MANAGER_H
 #include "main.h"
 
-// wait_to_exit(); update shm status to -1 /waiting for things to end
-// print_stats();
-
-
+//transform from pipe to task
 bool task_format(char * buffer){
     char temp [BUF_SIZE];
     strcpy(temp,buffer);

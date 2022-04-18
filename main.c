@@ -8,8 +8,8 @@
 #include "monitor.h"
 #include "util.h"
 
-
-server_node * read_server_info(char * line){
+// read individual server config from the config file
+server_node * read_config_aux(char * line){
     char name[BUF_SIZE];
     char buffer_line[BUF_SIZE];
     int cpu1,cpu2;
@@ -35,14 +35,7 @@ server_node * read_server_info(char * line){
     return aux;
 }
 
-
-void print_node(server_node * temp){
-    if(temp==NULL) printf("temp node is null something is wrong");
-    else printf("node: %s %d %d\n", temp->name, temp->cpu1, temp->cpu2);
-}
-
-
-
+//read config file
 bool read_config(char * config_file){
     FILE * fp;
     char * line = NULL;
@@ -99,7 +92,7 @@ bool read_config(char * config_file){
             return false; 
         }
 
-        server_node * temp = read_server_info(line);
+        server_node * temp = read_config_aux(line);
 
 
         if(config->server_info == NULL){
@@ -126,7 +119,7 @@ bool read_config(char * config_file){
     return true;
 }
 
-
+//init simulation -> start log, config, shm, mq,...
 void start(char * config_file){
 
     if(!read_config(config_file)){
@@ -212,7 +205,6 @@ void start(char * config_file){
 
    
 }
-
 
 int main(int argc, char *argv[]){
     if(argc >=4 || argc <= 1){

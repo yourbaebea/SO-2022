@@ -4,7 +4,8 @@
 
 //functions used in the whole project but arent specific
 
-
+//future function that checks the status of the simulation in the shm
+//this probably should require a cond var TODO
 int simulation_status(){
     //do i need the mutex here?
     //return shm->status;
@@ -12,7 +13,7 @@ int simulation_status(){
     return 1; //running
 }
 
-
+//just for debug of messages
 void print(char * message, ...){
     if(debug){
     va_list args;
@@ -20,10 +21,17 @@ void print(char * message, ...){
     printf("DEBUG: ");
     vprintf(message,args);
     printf("\n");
+    va_end(args);
     }
 }
 
-void write_log(char * message){
+//write info in log and terminal at the same time
+void write_log(char * message, ...){
+    char buffer[BUF_SIZE];
+    va_list args2;
+    va_start(args2,message);
+    vsprintf(buffer, message,args2);
+    va_end(args2);
 
 	char timeformat [80];
     time_t rawtime;
@@ -34,7 +42,7 @@ void write_log(char * message){
     
     pthread_mutex_lock(&shm->log_mutex);
 
-    fprintf(log_file, "%s %s \n", timeformat, message);
+    fprintf(log_file, "%s %s \n", timeformat, buffer);
     fflush(log_file);
     
     // write in the terminal
@@ -43,7 +51,6 @@ void write_log(char * message){
     pthread_mutex_unlock(&shm->log_mutex);
 
 }
-
 
 // called by the signal or by the named pipe to end the simulation
 void terminate(){
@@ -60,6 +67,7 @@ void terminate(){
 
 }
 
+//print the stats
 void print_stats(){
 	char stats[10000];
 	
@@ -96,8 +104,7 @@ void print_stats(){
 	write_log(stats);
 }
 
-
-
+//delete all and end
 void end(int status){
 	int i;
     print("ENDING THE SIMULATION.......");
@@ -139,8 +146,7 @@ void end(int status){
     exit(status);
 }
 
-
-
+//used in thread time for update
 void * time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
@@ -164,8 +170,5 @@ void * time_update() {
     pthread_exit(NULL);
     return NULL;
 }
-
-
-
 
 #endif

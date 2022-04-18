@@ -67,6 +67,7 @@ bool check(server_struct * s){
 //TODO
 void maintenance_manager() {
 	write_log("PROCESS MAINTENANCE MANAGER CREATED");
+    /*
     int maintenance_time;
     long maintenance;
     int i, sum;
@@ -74,8 +75,10 @@ void maintenance_manager() {
     server_struct * current;
     
     msg_struct msg;
+    */
 
     while(1){
+        /*
     	printf("inside maintenance manager");
         if(simulation_status()==false) break;
         
@@ -110,6 +113,7 @@ void maintenance_manager() {
        else{
        print("maintenance tried server %d, couldnt", maintenance);
        }
+       */
            
                 
  

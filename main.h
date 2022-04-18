@@ -32,12 +32,11 @@
 
 //#include "main.c"
 
-
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
 #define BUF_SIZE 1024
-#define MAINTENANCE_MINIMUM 1
-#define MAINTENANCE_MAXIMUM 5
+#define MAINTENANCE_MINIMUM 1 //value defined by project but not in the config file
+#define MAINTENANCE_MAXIMUM 5 //value defined by project but not in the config file
 #define PATH "C:\\Users\\Ana\\Desktop\\SO\\project\\"
 
 //---------------------- structs ---------------------------------
@@ -45,7 +44,7 @@
 
 // Message struct
 typedef struct{
-    long mtype; //strtol(server.name) 
+    long mtype;
     int maintenance_time;
 } msg_struct;
 
@@ -73,6 +72,7 @@ typedef struct{
     bool active;
     bool busy;
     //missing stuff?
+    //TODO
 } cpu_struct;
 
 
@@ -158,25 +158,40 @@ pthread_t thread_time;          // Update time in shared memory
 //---------------------- functions ---------------------------------
 
 //main
-void print(char * message,...);
-void write_log(char * message);
-void clear_log();
 bool read_config(char * config_file);
-server_node * read_server_info(char * line);
+server_node * read_config_aux(char * line);
 void start(char * config_file);
-void end(int status);
 
-int generate(int min, int max);
-bool check(server_struct * s);
-void maintenance_manager();
-void edge_server(int id);
-void monitor();
+//util
 int simulation_status();
+void print(char * message,...);
+void write_log(char * message,...);
+void end(int status);
+void terminate();
+void print_stats();
+void * time_update();
+
+//task manager
 bool task_format(char * buffer);
 bool create_task(int id,int instructions, int max_time);
 void read_pipe();
+void * scheduler();
+void * dispacher();
 void task_manager();
+
+//edge server
 void * cpu(void* cpu_shm);
-void * time_update();
+void edge_server(int id);
+
+//maintenance manager
+//TODO void receives_messages();
+int generate(int min, int max);
+bool check(server_struct * s);
+void maintenance_manager();
+
+//monitor
+void monitor();
+
+
 
 #endif
