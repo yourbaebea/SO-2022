@@ -27,6 +27,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <limits.h>
 
 //---------------------- include other files ---------------------------------
 
@@ -65,12 +66,31 @@ typedef struct{
     server_node * server_info;
 } config_struct;
 
+
+// Task struct
+typedef struct task_struct_aux task_struct_next;
+typedef struct task_struct_aux{
+    int id;
+    int instructions;
+    int time_max;
+    int time_start;
+    int time_waiting; //when accepted in cpu, do currenttime- creation time
+    int priority;
+    
+    task_struct_next * next;
+
+}task_struct;
+
+
+
 //cpu struct
 typedef struct{
-    pthread_mutex_t cpu_mutex;
     int mips;
     bool active;
     bool busy;
+    pthread_cond_t task_available;
+    pthread_mutex_t task_available_mutex; //for both status!!!!
+    task_struct * task; //pointer to current task being done, no need to malloc space its only a pointer
     //missing stuff?
     //TODO
 } cpu_struct;
@@ -80,9 +100,10 @@ typedef struct{
 // servers structs
 typedef struct server_struct_aux server_struct_next;
 typedef struct server_struct_aux{
-    int state;//= status.NORMAL;
+    pthread_mutex_t cpu_mutex;
     cpu_struct * cpu1;
     cpu_struct * cpu2;
+    int p[2]; //pipe
     int performance; //lvl of performance
     int active_cpus;//=1; //default value for number of cpu is 1
 
@@ -108,41 +129,37 @@ typedef struct{
 // SHM struct
 typedef struct{
     int time;
-    int status;//=1; // 1 ready/running, -1 needs to end/waiting to end, -2 end
+    int status; // 1 ready/running,0 hasnt started yet, -1 needs to end/waiting to end, -2 end
+    int server_status;//2 high, 1 normal, 0 hasnt started yet, -1 stopped;
 
     stats_struct * stats;
+
+    pthread_mutex_t status_mutex; //for both status!!!!
     
     //servers array data pointer
     server_struct * server;
+ 
 
-    pthread_mutex_t time_mutex, log_mutex, stats_mutex;
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex, tasks_mutex, scheduler_mutex, dispacher_mutex;
     //whenever we update the struct we need to lock this mutex
 
+    // Condition variables
+    pthread_cond_t time_update;
+    pthread_cond_t scheduler, dispacher;
+
+
+
+
 } shm_struct;
-
-// Task struct
-typedef struct task_struct_aux task_struct_next;
-typedef struct task_struct_aux{
-    int status; //done, rejected, waiting
-    int id;
-    int instructions;
-    int time_max;
-    int time_start;
-    int time_waiting; //when accepted in cpu, do currenttime- creation time
-    
-    task_struct_next * next;
-
-}task_struct;
 
 
 
 //---------------------- global vars ---------------------------------
 bool debug=false;
-enum status{ NORMAL, HIGH, STOPPED}; //how to set the server status server.status= status.NORMAL
-
 FILE* log_file;                 // Log file pointer
 shm_struct * shm;
 config_struct * config;
+task_struct * tasklist;
 
 //TODO
 int mqid;

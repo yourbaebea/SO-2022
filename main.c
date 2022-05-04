@@ -180,6 +180,13 @@ void start(char * config_file){
     	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu1->mips= paux->cpu1;
         temp->cpu2->mips= paux->cpu2;
+
+        //TODO server->cpu1->task= malloc()????????????'
+
+        if (pipe(temp->p) == -1) {
+            print("ERROR IN CREATE UNNAMED PIPE");
+            end(EXIT_FAILURE);
+        }
     	
         if(i==0){
             shm->server = temp;
@@ -195,13 +202,27 @@ void start(char * config_file){
     
    
     //shm vars need to be updated with the shm mutex
-    //TODO
+
+    shm->dispacher= PTHREAD_COND_INITIALIZER;
+    shm->scheduler= PTHREAD_COND_INITIALIZER;
+
+    //do i need to init mutex?
+
+    shm->status=0;
+    shm->server_status=0;
+    
+    //TODO other shm vars
+
+    //STATS
 
 
     if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0700)) == -1) {
         printf ("Error on MQ creation\n");
         end(EXIT_FAILURE);
     }
+
+
+
 
    
 }
@@ -219,7 +240,6 @@ int main(int argc, char *argv[]){
     start(argv[1]);
 
     print("START DONE");
-    write_log("OFFLOAD SIMULATOR STARTING");
 
     if(fork()) {
         task_manager();

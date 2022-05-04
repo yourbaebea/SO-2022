@@ -10,7 +10,20 @@ int simulation_status(){
     //do i need the mutex here?
     //return shm->status;
     //TODO
-    return 1; //running
+    pthread_mutex_lock(&shm->status_mutex);
+    int simulation= shm->status;
+    int servers= shm->server_status;
+    if(servers==status.STOPPED && simulation==-1){
+        shm->status=-2;
+        //TODO broadcast the condvariable
+        print("broadcasting cond vars to end the scheduler and dispacher");
+        pthread_cond_signal(&shm->scheduler);
+        pthread_cond_signal(&shm->dispacher);
+    }
+    pthread_mutex_unlock(&shm->status_mutex);
+
+    return simulation;
+
 }
 
 //just for debug of messages
@@ -157,6 +170,13 @@ void * time_update() {
     shm->time=0;
     pthread_mutex_unlock(&shm->time_mutex);
 
+    pthread_mutex_lock(&shm->status_mutex);
+    shm->status=1;
+    shm->server_status=1;
+    pthread_mutex_unlock(&shm->status_mutex);
+
+    write_log("OFFLOAD SIMULATOR STARTING");
+
     while (simulation_status() > 0) {
     	print("time: %d", shm->time);
         pthread_mutex_lock(&shm->time_mutex);
@@ -170,5 +190,16 @@ void * time_update() {
     pthread_exit(NULL);
     return NULL;
 }
+
+
+//get the current time
+int current_time(){
+    pthread_mutex_lock(&shm->time_mutex);
+    int current= shm->time;
+    pthread_mutex_unlock(&shm->time_mutex);
+    return current;
+}
+
+
 
 #endif
