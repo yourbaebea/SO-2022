@@ -40,6 +40,7 @@ how to i stop the cond var wait errors?
 
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
+#define START_COUNT 10
 #define BUF_SIZE 1024
 #define MAINTENANCE_MINIMUM 1 //value defined by project but not in the config file
 #define MAINTENANCE_MAXIMUM 5 //value defined by project but not in the config file
@@ -140,6 +141,8 @@ typedef struct{
     int status; // 1 ready/running,0 hasnt started yet, -1 needs to end/waiting to end, -2 end
     int server_status;//2 high, 1 normal, 0 hasnt started yet, -1 stopped;
 
+    //bool available; //true, there is an available cpu
+
     stats_struct * stats;
     //servers array data pointer
     server_struct * server;
@@ -150,6 +153,8 @@ typedef struct{
 
     // Condition variable
     pthread_cond_t scheduler, dispacher;
+    pthread_cond_t simulation;
+    int start;
 
 } shm_struct;
 
@@ -161,6 +166,10 @@ FILE* log_file;                 // Log file pointer
 shm_struct * shm;
 config_struct * config;
 task_struct * tasklist;
+pthread_mutexattr_t attrmutex;
+pthread_condattr_t cattr;
+sigset_t block_sigint;
+
 
 //TODO
 int mqid;

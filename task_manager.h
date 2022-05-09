@@ -34,18 +34,22 @@ void insert_task_list(task_struct * task){
 
     //wait
     sem_wait(&sem_tasks);
+    print("current tasklist");
     if(tasklist==NULL){
         //task list created
         tasklist = task;
+        print_task(task);
     }
     else{
         task_struct * p;
         p= tasklist;
         while(p->next!=NULL){
+            print_task(task);
             p = p->next;
         }
         p->next= task;
     }
+    print("tasklist done");
 
     sem_post(&sem_tasks);
 
@@ -59,9 +63,11 @@ void remove_task(task_struct * before, task_struct * current, bool success){
 
     if(success){
         print("Task %d is being sent to the cpu", current->id);
+        print_task(current);
     }
     else{
-        write_log("Task %d expired and was never executed");
+        write_log("Task %d expired and was never executed", current->id);
+        print_task(current);
         pthread_mutex_lock(&shm->stats_mutex);
         shm->stats->tasks_refused++;
         pthread_mutex_unlock(&shm->stats_mutex);
@@ -97,6 +103,7 @@ bool write_unnamed_pipe(task_struct * current){
         }
 
         pthread_mutex_lock(&temp->server_mutex);
+        if(!temp->stopped){
         if( (!temp->cpu1->busy && temp->cpu1->active) || (!temp->cpu2->busy && temp->cpu2->active)){
             write(temp->p[1], current, sizeof(task_struct));
             /*
@@ -109,19 +116,16 @@ bool write_unnamed_pipe(task_struct * current){
             close(fileStatusPipe[0]);
             exit(0);
             */
-            
-
-           //deleting is already done after sending to unpipe
-
            pthread_mutex_unlock(&temp->server_mutex);
            return true;
+        }
         }
         pthread_mutex_unlock(&temp->server_mutex);
 
 
     }
 
-    print("there was a free cpu but the server went to maintenance, we are just ignoring and retrying when another becomes available!");
+    print("there was a free cpu but the server probably went to maintenance, we are just ignoring and retrying when another becomes available!");
     return false;
 }
 
@@ -248,13 +252,14 @@ void * scheduler(){
 }
 
 void * dispacher(){
-
-   task_struct * p;
-   int next;
-   task_struct * save_before;
-   task_struct * save_current;
     
     print("THREAD DISPACHER CREATED");
+
+
+    print("waiting for cond wait");
+    pthread_cond_wait(&shm->simulation,&shm->status_mutex);
+
+
 
     while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside dispacher");
@@ -270,6 +275,11 @@ void * dispacher(){
         }
 
         sem_wait(&sem_tasks);
+
+        task_struct * p;
+        int next;
+        task_struct * save_before;
+        task_struct * save_current;
 
         p= tasklist;
         next=INT_MAX;

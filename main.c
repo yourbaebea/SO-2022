@@ -204,16 +204,22 @@ void start(char * config_file){
     
     
     print("OUTSIDE SHM");
-    
-    pthread_cond_init(&shm->dispacher,NULL);
-    pthread_cond_init(&shm->scheduler,NULL);
-    pthread_mutex_init(&shm->status_mutex,NULL);
-    pthread_mutex_init(&shm->time_mutex,NULL);
-    pthread_mutex_init(&shm->log_mutex,NULL);
-    pthread_mutex_init(&shm->stats_mutex,NULL);
-    pthread_mutex_init(&shm->dispacher_mutex,NULL);
-    pthread_mutex_init(&shm->scheduler_mutex,NULL);
-    
+
+    //just to make them sharable between diferent processes!
+    pthread_mutexattr_init(&attrmutex);
+    pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
+    pthread_condattr_init(&cattr);
+    pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&shm->simulation,&cattr);
+    pthread_cond_init(&shm->dispacher,&cattr);
+    pthread_cond_init(&shm->scheduler,&cattr);
+    pthread_mutex_init(&shm->status_mutex,&attrmutex);
+    pthread_mutex_init(&shm->time_mutex,&attrmutex);
+    pthread_mutex_init(&shm->log_mutex,&attrmutex);
+    pthread_mutex_init(&shm->stats_mutex,&attrmutex);
+    pthread_mutex_init(&shm->dispacher_mutex,&attrmutex);
+    pthread_mutex_init(&shm->scheduler_mutex,&attrmutex);
+
     
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
@@ -270,6 +276,15 @@ int main(int argc, char *argv[]){
     }
     if(argc == 3 && strcmp(argv[2], "debug") == 0) debug = true;
 
+    write_log("OFFLOAD SIMULATOR STARTING");
+
+    signal(SIGINT, terminate);
+    signal (SIGTSTP,print_stats);
+
+    sigemptyset(&block_sigint);
+    sigaddset(&block_sigint, SIGINT);
+    sigprocmask (SIG_BLOCK, &block_sigint, NULL);
+
 
     print("SYSTEM MANAGER");
 
@@ -287,8 +302,7 @@ int main(int argc, char *argv[]){
         maintenance_manager();
     }
     else {
-        signal(SIGINT, terminate);
-        signal (SIGTSTP,print_stats);
+        sigprocmask (SIG_UNBLOCK, &block_sigint, NULL);
         print("SYSTEM MANAGER AFTER FORKS");
         //this continues to be the SYSTEM MANAGER
 

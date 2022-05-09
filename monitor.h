@@ -14,25 +14,15 @@ void monitor() {
     int lower_time;
     task_struct * temp;
     server_struct * server;
+    int change;
 
-    while(simulation_status()>=0){ //if ending we dont need this anymore
-        //update cpu status shm depending on lvl
-        /*
-        Processo responsável por controlar o número de vCPUs ativos dentro dos processos Edge Server.
-        Para poupar energia cada servidor apenas tem por omissão 1 vCPU ativo.
-        Sempre que a fila no processo Task Manager esteja mais de 80% preenchida e o tempo mínimo
-        de espera para que uma nova tarefa seja executada for superior a MAX_WAIT segundos (ver
-        ficheiro de configurações), o processo Monitor ativará o modo High performance de todos os Edge
-        Server. Quando a fila descer a ocupação para 20% volta a ativar o modo de performance Normal.
-        A troca de modo de performance será assinalada através de uma flag existente em memória
-        partilhada.
-        */
+    while(simulation_status()>=0){
 
         count_tasks=1;
         lower_time=INT_MAX;
         temp= tasklist;
         task_struct * task;
-        server=shm->server;
+        
         float aux_tasks;
         int aux_time;
 
@@ -44,6 +34,7 @@ void monitor() {
         }
         sem_wait(&sem_tasks);
 
+        server=shm->server;
         while(server->next!=NULL){
             pthread_mutex_lock(&server->cpu1->task_available_mutex);
             task= server->cpu1->task;
@@ -52,6 +43,11 @@ void monitor() {
                 aux_time= task->time_needed - ( current_time() - task->time_acceptance);
                 //time still left to finish!
                 if(aux_time<lower_time) lower_time = aux_time;
+            }
+            else{
+                aux_time=0;
+                print("THERE IS AN AVAILABLE CPU, WE ARE IGNORING THE MONITOR");
+                break;
             }
             pthread_mutex_unlock(&server->cpu1->task_available_mutex);
 
@@ -68,13 +64,27 @@ void monitor() {
 
         aux_tasks= count_tasks/(float) config->queue_pos;
 
-        if(aux_time > config->max_wait && aux_tasks > 0.8){
-            //CHANGE TO HIGH
-            //IM HERE
-            //DOING THIS
+
+        change=0;
+        pthread_mutex_lock(&shm->status_mutex);
+        if((shm->server_status==1) && (aux_time > config->max_wait) && (aux_tasks > 0.8)) change=1;
+        if((shm->server_status==2) && (aux_tasks < 0.2)) change=-1;
+        shm->server_status+=change;
+        pthread_mutex_unlock(&shm->status_mutex);
+
+        if(change!=0){
+            print("MONITOR CHANGING STATUS IN SERVERS %d", change);
+            server=shm->server;
+            while(server->next!=NULL){
+                pthread_mutex_lock(&server->server_mutex);
+                if(change==1) server->cpu2->active=true;
+                if(change==-1) server->cpu2->active=false;
+                pthread_mutex_unlock(&server->server_mutex);
+                server=server->next;
+            }
+
         }
-
-
+        
 
 
        //stop all things

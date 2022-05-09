@@ -34,7 +34,6 @@ void * cpu(int parameters[2]){
     while(simulation_status()>=0){
 
         //its fine if inside its -1 bc its supossed to make it still run, the next time is not gonna enter
-
         pthread_mutex_lock(&cpu->task_available_mutex);
         pthread_cond_wait(&cpu->task_available,&cpu->task_available_mutex);
         //waiting for a new task to be processed;
@@ -70,8 +69,6 @@ void * cpu(int parameters[2]){
         pthread_mutex_lock(&shm->dispacher_mutex);
         pthread_cond_signal(&shm->dispacher);
         pthread_mutex_unlock(&shm->dispacher_mutex);
-
-
 
     }
 
