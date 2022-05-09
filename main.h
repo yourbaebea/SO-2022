@@ -47,6 +47,7 @@ how to i stop the cond var wait errors?
 
 //---------------------- structs ---------------------------------
 
+typedef int pipe_struct[2];
 
 // Message struct
 typedef struct{
@@ -110,8 +111,8 @@ typedef struct server_struct_aux{
     pthread_mutex_t server_mutex;
     cpu_struct * cpu1;
     cpu_struct * cpu2;
-    //int * p[2]; //pipe
-    //char * name;
+    int p[2]; //pipe
+    char * name;
     int active_cpus;//=1; //default value for number of cpu is 1
     int tasks_done;//=0;
     int maintenance;//=0;

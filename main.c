@@ -159,72 +159,71 @@ void start(char * config_file){
         print("ERROR IN CREATE SHM");
         end(EXIT_FAILURE);
     }
+    
     int i;
-  
+       
     server_struct * p;
     server_node * paux;
-    char name[BUF_SIZE];
     
     for(i=0; i<config->edge_server_number; i++){
     	server_struct * temp= (server_struct *) malloc(sizeof(server_struct));
     	
-    	 //TODO missing name        
-        //memset(name,0, strlen(name));
-        //name=strdup(paux->name);
-        //temp->name=strdup(name);
-        
     	temp->cpu1= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu1->mips= paux->cpu1;
         temp->cpu2->mips= paux->cpu2;
+        temp->name=paux->name;
+        /*
+                
         
-        
-        print("server : after name");
         temp->maintenance=0;
         temp->tasks_done=0;
         temp->stopped=false;
         temp->active_cpus=1;
+        */
         
-        //TODO server->cpu1->task= malloc()????????????'
-
-	/*
         if (pipe(temp->p) == -1) {
             print("ERROR IN CREATE UNNAMED PIPE");
             end(EXIT_FAILURE);
         }
-        */
     	
         if(i==0){
             shm->server = temp;
             p  = shm->server;
-            paux= config->server_info;           
+            paux= config->server_info;        
         }
         else{
             p->next = temp;
             p = p->next;
             paux=paux->next;
         }
+        temp->name=paux->name; 
+        print("server in shm %s", temp->name);
     }
+    
+    
     
     print("OUTSIDE SHM");
     
+    pthread_cond_init(&shm->dispacher,NULL);
+    pthread_cond_init(&shm->scheduler,NULL);
+    pthread_mutex_init(&shm->status_mutex,NULL);
+    pthread_mutex_init(&shm->time_mutex,NULL);
+    pthread_mutex_init(&shm->log_mutex,NULL);
+    pthread_mutex_init(&shm->stats_mutex,NULL);
+    pthread_mutex_init(&shm->dispacher_mutex,NULL);
+    pthread_mutex_init(&shm->scheduler_mutex,NULL);
     
-    shm->dispacher= (pthread_cond_t) PTHREAD_COND_INITIALIZER;
-    shm->scheduler= (pthread_cond_t) PTHREAD_COND_INITIALIZER;
-    shm->status_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->time_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->log_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->stats_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->dispacher_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->scheduler_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
-    pthread_mutex_lock(&shm->status_mutex);
+    pthread_mutex_unlock(&shm->status_mutex);
     
     print("AFTER MUTEX");
     
+
+        
     
     //STATS
     shm->stats= (stats_struct *) malloc(sizeof(stats_struct));
