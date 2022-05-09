@@ -11,9 +11,8 @@ int simulation_status(){
     //return shm->status;
     //TODO
     pthread_mutex_lock(&shm->status_mutex);
-    int simulation= shm->status;
-    int servers= shm->server_status;
-    if(servers==status.STOPPED && simulation==-1){
+    int simulation=shm->status;
+    if(simulation==-1 && shm->server_status==-1){
         shm->status=-2;
         //TODO broadcast the condvariable
         print("broadcasting cond vars to end the scheduler and dispacher");
@@ -191,7 +190,6 @@ void time_update() {
     print("\n\nHEREsimulation status is %d", shm->status);
 
     pthread_exit(NULL);
-    return NULL;
 }
 
 

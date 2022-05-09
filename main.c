@@ -160,27 +160,26 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     int i;
-
-    shm->dispacher= PTHREAD_COND_INITIALIZER;
-    shm->scheduler= PTHREAD_COND_INITIALIZER;
-    shm->status_mutex= PTHREAD_MUTEX_INITIALIZER;
-    shm->time_mutex= PTHREAD_MUTEX_INITIALIZER;
-    shm->log_mutex= PTHREAD_MUTEX_INITIALIZER;
-    shm->stats_mutex= PTHREAD_MUTEX_INITIALIZER;
-    shm->dispacher_mutex= PTHREAD_MUTEX_INITIALIZER;
-    shm->scheduler_mutex= PTHREAD_MUTEX_INITIALIZER;
-       
+  
     server_struct * p;
     server_node * paux;
+    char name[BUF_SIZE];
     
     for(i=0; i<config->edge_server_number; i++){
     	server_struct * temp= (server_struct *) malloc(sizeof(server_struct));
     	
+    	 //TODO missing name        
+        //memset(name,0, strlen(name));
+        //name=strdup(paux->name);
+        //temp->name=strdup(name);
+        
     	temp->cpu1= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu1->mips= paux->cpu1;
         temp->cpu2->mips= paux->cpu2;
-        temp->name=strdup(paux->name);
+        
+        
+        print("server : after name");
         temp->maintenance=0;
         temp->tasks_done=0;
         temp->stopped=false;
@@ -188,10 +187,12 @@ void start(char * config_file){
         
         //TODO server->cpu1->task= malloc()????????????'
 
+	/*
         if (pipe(temp->p) == -1) {
             print("ERROR IN CREATE UNNAMED PIPE");
             end(EXIT_FAILURE);
         }
+        */
     	
         if(i==0){
             shm->server = temp;
@@ -205,10 +206,24 @@ void start(char * config_file){
         }
     }
     
+    print("OUTSIDE SHM");
+    
+    
+    shm->dispacher= (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    shm->scheduler= (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    shm->status_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->time_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->log_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->stats_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->dispacher_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->scheduler_mutex= (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
     pthread_mutex_lock(&shm->status_mutex);
+    
+    print("AFTER MUTEX");
     
     
     //STATS
@@ -221,10 +236,14 @@ void start(char * config_file){
     shm->stats->tasks_by_server= (int*) malloc(sizeof(int) * config->edge_server_number);
     shm->stats->op_by_server=(int*) malloc(sizeof(int) * config->edge_server_number);
     pthread_mutex_unlock(&shm->stats_mutex);
+    
+    print("AFTER STATS");
 
 
     //sem tasks
     sem_init(&sem_tasks, 0, 1);
+    
+    print("AFTER SEM");
 
 
     //open log file

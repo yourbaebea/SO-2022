@@ -110,10 +110,9 @@ typedef struct server_struct_aux{
     pthread_mutex_t server_mutex;
     cpu_struct * cpu1;
     cpu_struct * cpu2;
-    int p[2]; //pipe
-    char * name;
+    //int * p[2]; //pipe
+    //char * name;
     int active_cpus;//=1; //default value for number of cpu is 1
-
     int tasks_done;//=0;
     int maintenance;//=0;
     bool stopped; //=false
@@ -189,6 +188,7 @@ void end(int status);
 void terminate();
 void print_stats();
 void time_update();
+int current_time();
 
 //task manager
 bool new_task(char * buffer);
@@ -200,7 +200,7 @@ void * dispacher();
 void task_manager();
 
 //edge server
-void * cpu(void* cpu_shm);
+void * cpu(int parameters[2]);
 void edge_server(int id);
 
 //maintenance manager

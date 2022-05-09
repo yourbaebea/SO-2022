@@ -31,35 +31,39 @@ void monitor() {
         count_tasks=1;
         lower_time=INT_MAX;
         temp= tasklist;
+        task_struct * task;
         server=shm->server;
         float aux_tasks;
         int aux_time;
 
 
-        pthread_mutex_lock(&shm->tasks_mutex);
+        sem_wait(&sem_tasks);
         while(temp->next!=NULL){
             count_tasks++;
             temp=temp->next;
         }
-        pthread_mutex_unlock(&shm->tasks_mutex);
+        sem_wait(&sem_tasks);
 
         while(server->next!=NULL){
             pthread_mutex_lock(&server->cpu1->task_available_mutex);
+            task= server->cpu1->task;
+            
             if(task!=NULL){
-                aux_time= server->cpu1->task->time_needed - ( current_time() - server->cpu1->task->time_acceptance);
+                aux_time= task->time_needed - ( current_time() - task->time_acceptance);
                 //time still left to finish!
                 if(aux_time<lower_time) lower_time = aux_time;
             }
             pthread_mutex_unlock(&server->cpu1->task_available_mutex);
 
             pthread_mutex_lock(&server->cpu2->task_available_mutex);
+            task= server->cpu2->task;
             if(task!=NULL){
-                aux_time= server->cpu2->task->time_needed - ( current_time() - server->cpu2->task->time_acceptance);
+                aux_time= task->time_needed - ( current_time() - task->time_acceptance);
                 //time still left to finish!
                 if(aux_time<lower_time) lower_time = aux_time;
             }
             pthread_mutex_unlock(&server->cpu2->task_available_mutex);
-            server=sever->next;
+            server=server->next;
         }
 
         aux_tasks= count_tasks/(float) config->queue_pos;

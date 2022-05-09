@@ -5,8 +5,7 @@
 #include "main.h"
 
 
-
-void * cpu(int *parameters[2]){
+void * cpu(int parameters[2]){
     cpu_struct * cpu;
     int id= parameters[0];
 
@@ -82,7 +81,7 @@ void * cpu(int *parameters[2]){
 }
 
 task_struct * copy(task_struct * old){
-    task_struct * new= (task_struct*) malloc(sizeof(task_struct *));
+    task_struct * new= (task_struct*) malloc(sizeof(task_struct));
     new->id=old->id;
     new->instructions=old->instructions;
     new->time_max= old->time_max;
@@ -93,11 +92,11 @@ task_struct * copy(task_struct * old){
 }
 
 void * read_unnamed_pipe(server_struct * server){
-    task_struct temp= (task_struct*) malloc(sizeof(task_struct *));
+    task_struct * temp= (task_struct*) malloc(sizeof(task_struct));
 
     while(read(server->p[0],&temp,sizeof(task_struct)) > 0)
     {
-        print("UNNAMED PIPE NEW TASK: %d\n", temp.id);
+        print("UNNAMED PIPE NEW TASK: %d\n", temp->id);
         
         pthread_mutex_lock(&server->server_mutex);
         if(!server->cpu1->busy && server->cpu1->active){
@@ -113,8 +112,10 @@ void * read_unnamed_pipe(server_struct * server){
         pthread_mutex_unlock(&server->server_mutex);
 
     }
+    pthread_exit(NULL);
+    return NULL;
 
-    free(temp);
+    //free(temp);
     
 }
 
@@ -140,18 +141,18 @@ void edge_server(int id) {
 
     print("creating threads of cpus");
 
-    int *parameters[2];
+    int parameters[2];
     parameters[0]=id;
 
 
     parameters[1]=1;
-    pthread_create(&thread_cpu1, NULL, cpu1, parameters);
+    pthread_create(&thread_cpu1, NULL, cpu,(void *) parameters);
 
     parameters[1]=2;
-    pthread_create(&thread_cpu2, NULL, cpu2, parameters);
+    pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters);
 
     print("creating thread to read unnamed pipe");
-    pthread_create(&thread_read_pipe, NULL, read_unnamed_pipe, server);
+    pthread_create(&thread_read_pipe, NULL, read_unnamed_pipe,(void *) server);
 
 
     msg_struct msg;
@@ -206,9 +207,9 @@ void edge_server(int id) {
 
     }
 
-    free(msg);
-    free(reply);
-    free(confirmation);
+    //free(msg);
+    //free(reply);
+    //free(confirmation);
 
 
     wait(NULL);

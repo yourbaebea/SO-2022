@@ -73,6 +73,7 @@ void * read_msg_queue(int value){
             msgsnd(mqid, &msg, sizeof(msg_struct), 0);
         }
     }
+    return NULL;
 
 }
 
@@ -82,30 +83,18 @@ void maintenance_manager() {
     //ignore signal
     signal(SIGINT, SIG_IGN);
     signal(SIGTSTP, SIG_IGN);
-	write_log("PROCESS MAINTENANCE MANAGER CREATED");
+    write_log("PROCESS MAINTENANCE MANAGER CREATED");
     pthread_t thread_maintenance;
-    pthread_create(&thread_maintenance, NULL, read_msg_queue, INT_MAX);
+    pthread_create(&thread_maintenance, NULL, read_msg_queue, (void *) INT_MAX);
 
-
-    // Receives message from control tower
-    msgrcv(mqid, &reply, sizeof(msg_struct), msg.uid, 0);
-
-
-    /*
-    int maintenance_time;
-    long maintenance;
-    int i, sum;
-    bool okay=true;
-    server_struct * current;
-    
-    msg_struct msg;
-    */
+  
 
    server_struct * temp;
-   int count, maintenance, maintenance_time;
+   int count,i, maintenance, maintenance_time;
    bool valid;
    msg_struct msg;
-
+   
+   
     while(simulation_status()>=0){ //if its ending dont do maintenance
         count=0;
         valid=true;
