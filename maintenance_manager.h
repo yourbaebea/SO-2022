@@ -56,17 +56,41 @@ int generate(int min, int max){
     return (rand() % max)+ min;
 }
 
-bool check(server_struct * s){
-//TODO
-	return true;
+
+void * read_msg_queue(int value){
+    msg_struct reply;
+    msg_struct msg;
+
+    while(simulation_status()>=0){
+    
+        if(msgrcv(mqid,&reply,sizeof(msg_struct)- sizeof(long),value, 0))
+        {
+            print("error while reading msg idk do we end?");
+        }
+        else{
+            //response to server
+            msg = (msg_struct) {(long) reply.mtype, 0};
+            msgsnd(mqid, &msg, sizeof(msg_struct), 0);
+        }
+    }
+
 }
-
-
 
 
 //TODO
 void maintenance_manager() {
+    //ignore signal
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
 	write_log("PROCESS MAINTENANCE MANAGER CREATED");
+    pthread_t thread_maintenance;
+    pthread_create(&thread_maintenance, NULL, read_msg_queue, INT_MAX);
+
+
+    // Receives message from control tower
+    msgrcv(mqid, &reply, sizeof(msg_struct), msg.uid, 0);
+
+
     /*
     int maintenance_time;
     long maintenance;
@@ -77,45 +101,46 @@ void maintenance_manager() {
     msg_struct msg;
     */
 
-    while(1){
-        /*
-    	printf("inside maintenance manager");
-        if(simulation_status()==false) break;
-        
-        maintenance=generate(0, config->edge_server_number-1);
-        current= shm->server;
-        okay=true;
+   server_struct * temp;
+   int count, maintenance, maintenance_time;
+   bool valid;
+   msg_struct msg;
 
-        //try to do maintenance in random server
-        for(i=0, sum=0 ;i<config->edge_server_number;i++){
-            
-            if(check(current)==true){
-            	sum++;
-            	if(i==maintenance){ //when we are trying to do maintenance on an already on maintenance server
-            	okay=false;
+    while(simulation_status()>=0){ //if its ending dont do maintenance
+        count=0;
+        valid=true;
+        maintenance=generate(0, config->edge_server_number-1);
+
+        for(i=0; i< config->edge_server_number; i++){
+            if(i==0){
+                temp=shm->server;
             }
-              
+            else{
+                temp = temp->next;
+            }
+
+            pthread_mutex_lock(&temp->server_mutex);
+            if(temp->stopped==true) count++;
+            pthread_mutex_unlock(&temp->server_mutex);
+
+            if(i==maintenance) valid=false; //when we are trying to do maintenance on an already on maintenance server
+
+
         }
-        
+
+
         //if all servers are in maintenance
-        if(sum>= config->edge_server_number-1) okay=false;
-        //if not all servers are in maintenance
+        if(count >= config->edge_server_number-1) valid=false;
+        
                    
-       if(okay==true){
-       	maintenance_time=generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
-       	msg = (msg_struct) {(long) maintenance, maintenance_time};
-       	
-       	if(msgsnd(mqid,&msg,sizeof(msg)- sizeof(long), 0)>0){
-		    write_log("Error sending message to message queue\n");
-		    end(EXIT_FAILURE);
-		}
-       }
-       else{
-       print("maintenance tried server %d, couldnt", maintenance);
-       }
-       */
-           
-                
+        if(valid==true){
+            maintenance_time=generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
+            msg = (msg_struct) {(long) maintenance, maintenance_time};
+            msgsnd(mqid, &msg, sizeof(msg_struct), 0);
+        }
+        else{
+            print("maintenance tried server %d, couldnt", maintenance);
+        }
  
         sleep(generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM)*1); //interval between maintenance
 

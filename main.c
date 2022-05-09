@@ -136,15 +136,6 @@ void start(char * config_file){
     // receive signals
     //TODO
 
-    //open log file
-    print("OPENING LOG FILE");
-    fclose(fopen(LOG_FILE, "w")); //clear if the previous run ended and log wasnt cleared
-    log_file = fopen(LOG_FILE, "a");
-    if(log_file == NULL){
-        print("ERROR OPENING LOG FILE");
-        end(EXIT_FAILURE);
-    }
-
     // Create pipe
     print("CREATE NAMED PIPE");
     unlink(TASK_PIPE);
@@ -169,6 +160,15 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     int i;
+
+    shm->dispacher= PTHREAD_COND_INITIALIZER;
+    shm->scheduler= PTHREAD_COND_INITIALIZER;
+    shm->status_mutex= PTHREAD_MUTEX_INITIALIZER;
+    shm->time_mutex= PTHREAD_MUTEX_INITIALIZER;
+    shm->log_mutex= PTHREAD_MUTEX_INITIALIZER;
+    shm->stats_mutex= PTHREAD_MUTEX_INITIALIZER;
+    shm->dispacher_mutex= PTHREAD_MUTEX_INITIALIZER;
+    shm->scheduler_mutex= PTHREAD_MUTEX_INITIALIZER;
        
     server_struct * p;
     server_node * paux;
@@ -180,7 +180,12 @@ void start(char * config_file){
     	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu1->mips= paux->cpu1;
         temp->cpu2->mips= paux->cpu2;
-
+        temp->name=strdup(paux->name);
+        temp->maintenance=0;
+        temp->tasks_done=0;
+        temp->stopped=false;
+        temp->active_cpus=1;
+        
         //TODO server->cpu1->task= malloc()????????????'
 
         if (pipe(temp->p) == -1) {
@@ -200,30 +205,43 @@ void start(char * config_file){
         }
     }
     
-   
-    //shm vars need to be updated with the shm mutex
-
-    shm->dispacher= PTHREAD_COND_INITIALIZER;
-    shm->scheduler= PTHREAD_COND_INITIALIZER;
-
-    //do i need to init mutex?
-
+    pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
+    pthread_mutex_lock(&shm->status_mutex);
     
-    //TODO other shm vars
-
+    
     //STATS
+    shm->stats= (stats_struct *) malloc(sizeof(stats_struct));
+    pthread_mutex_lock(&shm->stats_mutex);
+    shm->stats->tasks_total=0;
+    shm->stats->tasks_done=0;
+    shm->stats->total_time_response=0;
+    shm->stats->tasks_refused=0;
+    shm->stats->tasks_by_server= (int*) malloc(sizeof(int) * config->edge_server_number);
+    shm->stats->op_by_server=(int*) malloc(sizeof(int) * config->edge_server_number);
+    pthread_mutex_unlock(&shm->stats_mutex);
+
+
+    //sem tasks
+    sem_init(&sem_tasks, 0, 1);
+
+
+    //open log file
+    print("OPENING LOG FILE");
+    fclose(fopen(LOG_FILE, "w")); //clear if the previous run ended and log wasnt cleared
+    log_file = fopen(LOG_FILE, "a");
+    if(log_file == NULL){
+        print("ERROR OPENING LOG FILE");
+        end(EXIT_FAILURE);
+    }
+
 
 
     if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0700)) == -1) {
         printf ("Error on MQ creation\n");
         end(EXIT_FAILURE);
     }
-
-
-
-
    
 }
 
@@ -251,25 +269,23 @@ int main(int argc, char *argv[]){
         maintenance_manager();
     }
     else {
+        signal(SIGINT, terminate);
+        signal (SIGTSTP,print_stats);
         print("SYSTEM MANAGER AFTER FORKS");
         //this continues to be the SYSTEM MANAGER
 
 
         print("before time");
 
-        pthread_create(&thread_time, NULL, time_update, NULL);
+        //pthread_create(&thread_time, NULL, time_update, NULL);
         
         while(1){
-        
+            time_update();
         //idk what the main does after this?
         //maybe replace thread time with this
         }
-	//wait(NULL);
-        //update time and wait for the signals
-        //signal(SIGINT, terminate);
-        //signal (SIGTSTP,print_stats);
-        
 
+        wait(NULL);
     }
     
 

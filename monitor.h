@@ -5,9 +5,17 @@
 
 //TODO
 void monitor() {
+    //ignore signal
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
     write_log("PROCESS MONITOR CREATED");
 
-    while(1){
+    int count_tasks;
+    int lower_time;
+    task_struct * temp;
+    server_struct * server;
+
+    while(simulation_status()>=0){ //if ending we dont need this anymore
         //update cpu status shm depending on lvl
         /*
         Processo responsável por controlar o número de vCPUs ativos dentro dos processos Edge Server.
@@ -19,6 +27,59 @@ void monitor() {
         A troca de modo de performance será assinalada através de uma flag existente em memória
         partilhada.
         */
+
+        count_tasks=1;
+        lower_time=INT_MAX;
+        temp= tasklist;
+        server=shm->server;
+        float aux_tasks;
+        int aux_time;
+
+
+        pthread_mutex_lock(&shm->tasks_mutex);
+        while(temp->next!=NULL){
+            count_tasks++;
+            temp=temp->next;
+        }
+        pthread_mutex_unlock(&shm->tasks_mutex);
+
+        while(server->next!=NULL){
+            pthread_mutex_lock(&server->cpu1->task_available_mutex);
+            if(task!=NULL){
+                aux_time= server->cpu1->task->time_needed - ( current_time() - server->cpu1->task->time_acceptance);
+                //time still left to finish!
+                if(aux_time<lower_time) lower_time = aux_time;
+            }
+            pthread_mutex_unlock(&server->cpu1->task_available_mutex);
+
+            pthread_mutex_lock(&server->cpu2->task_available_mutex);
+            if(task!=NULL){
+                aux_time= server->cpu2->task->time_needed - ( current_time() - server->cpu2->task->time_acceptance);
+                //time still left to finish!
+                if(aux_time<lower_time) lower_time = aux_time;
+            }
+            pthread_mutex_unlock(&server->cpu2->task_available_mutex);
+            server=sever->next;
+        }
+
+        aux_tasks= count_tasks/(float) config->queue_pos;
+
+        if(aux_time > config->max_wait && aux_tasks > 0.8){
+            //CHANGE TO HIGH
+            //IM HERE
+            //DOING THIS
+        }
+
+
+
+
+       //stop all things
+        pthread_mutex_lock(&server->server_mutex);
+        if(server->stopped==false){ 
+            server->cpu2->active= true;
+        }
+        pthread_mutex_unlock(&server->server_mutex);
+
     }
 
 }

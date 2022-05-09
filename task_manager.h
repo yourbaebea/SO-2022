@@ -32,6 +32,9 @@ void insert_task_list(task_struct * task){
     shm->stats->tasks_total++;
     pthread_mutex_unlock(&shm->stats_mutex);
 
+
+    //wait
+    sem_wait(&sem_tasks);
     if(tasklist==NULL){
         //task list created
         tasklist = task;
@@ -45,21 +48,12 @@ void insert_task_list(task_struct * task){
         p->next= task;
     }
 
+    sem_post(&sem_tasks);
+
     //TODO broadcast the condvariable
     print("broadcasting cond var scheduler");
     pthread_cond_signal(&shm->scheduler);
 
-
-}
-
-void update_priority(task_struct * before, task_struct * current){
-    
-    //check the priority and update
-    int score=current->time_start + current->time_max;
-
-    current->priority=score;
-
-    if(score >= current_time()) remove_task(before, current,false);
 
 }
 
@@ -84,6 +78,7 @@ void remove_task(task_struct * before, task_struct * current, bool success){
         print("deleting inside list");
         before->next= current->next;
     }
+
     
     //if current->next==NULL there is no problem it means its the end of the list
     
@@ -91,8 +86,7 @@ void remove_task(task_struct * before, task_struct * current, bool success){
     return;
 }
 
-
-void write_unnamed_pipe(task_struct * current){
+bool write_unnamed_pipe(task_struct * current){
     int i;
     server_struct * temp;
 
@@ -104,7 +98,7 @@ void write_unnamed_pipe(task_struct * current){
             temp = temp->next;
         }
 
-        pthread_mutex_lock(&temp->cpu_mutex);
+        pthread_mutex_lock(&temp->server_mutex);
         if(!temp->cpu1->busy && temp->cpu1->active || !temp->cpu2->busy && temp->cpu2->active){
             write(temp->p[1], current, sizeof(task_struct));
             /*
@@ -120,20 +114,17 @@ void write_unnamed_pipe(task_struct * current){
 
            //deleting is already done after sending to unpipe
 
-           pthread_mutex_unlock(&temp->cpu_mutex);
-           return;
+           pthread_mutex_unlock(&temp->server_mutex);
+           return true;
         }
-        pthread_mutex_unlock(&temp->cpu_mutex);
+        pthread_mutex_unlock(&temp->server_mutex);
 
 
     }
 
-    print("couldnt find available cpu for task, this should never happen since the cond var signaled a free cpu!");
-    
+    print("there was a free cpu but the server went to maintenance, we are just ignoring and retrying when another becomes available!");
+    return false;
 }
-
-
-
 
 void read_task_pipe(){
 
@@ -249,7 +240,7 @@ que chegou ao Task Manager.
         }
 
 
-        pthread_mutex_lock(&shm->task_mutex);
+        sem_wait(&sem_tasks);
 
         p= tasklist;
 
@@ -283,7 +274,7 @@ que chegou ao Task Manager.
         }
        
 
-        pthread_mutex_unlock(&shm->tasks_mutex);
+        sem_post(&sem_tasks);
 
 
         //dont post sem, we need the sem to only be released in the insert_task_list
@@ -320,7 +311,7 @@ realizar.
     
     print("THREAD DISPACHER CREATED");
 
-   while(simulation_status()>=-1){  //while its running or waiting to stop
+    while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside dispacher");
 
         pthread_mutex_lock(&shm->dispacher_mutex);
@@ -333,7 +324,7 @@ realizar.
             break;
         }
 
-        pthread_mutex_lock(&shm->tasks_mutex);
+        sem_wait(&sem_tasks);
 
         p= tasklist;
         next=INT_MAX;
@@ -375,18 +366,13 @@ realizar.
         
         }
 
-        if(next<INT_MAX){
-            pthread_mutex_unlock(&shm->tasks_dispacher);
-
-            write_unnamed_pipe(save_current);
-            remove_task(save_before,save_current, true);
+        if(next<INT_MAX) if(write_unnamed_pipe(save_current)) remove_task(save_before,save_current, true);
+            //DISPACHER CAN BE USED WHEN IN MAINTENANCE DONT REMOVE IN CASE IT IS, already done!
             
-        }
-        else{
-            pthread_mutex_unlock(&shm->tasks_dispacher);
-        }
+        sem_post(&sem_tasks);
 
         sleep(1);
+        //TODO
         //THIS SHOULD NOT HAVE THIS SLEEP 1 IT ONLY SHOULD BE CALLED WHEN THE SEM IS RELEASED!!!!!!!!!!!
     }
 
@@ -397,6 +383,9 @@ realizar.
 
 //TODO
 void task_manager() {
+    //ignore signal
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
     write_log("PROCESS TASK_MANAGER CREATED");
     //print("TASKMANAGER PID: %d", getpid());
 

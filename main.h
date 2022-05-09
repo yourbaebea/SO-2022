@@ -1,5 +1,10 @@
 /* SO 2021/22 Ana Beatriz Marques 2018274233 */
+/*
+things to see in the future
+do i need to close the un pipes in each side
+how to i stop the cond var wait errors?
 
+*/
 #ifndef MAIN_H
 #define MAIN_H
 
@@ -74,6 +79,8 @@ typedef struct task_struct_aux{
     int instructions;
     int time_max;
     int time_start;
+    int time_acceptance;
+    int time_needed;
     int time_waiting; //when accepted in cpu, do currenttime- creation time
     int priority;
     
@@ -100,15 +107,16 @@ typedef struct{
 // servers structs
 typedef struct server_struct_aux server_struct_next;
 typedef struct server_struct_aux{
-    pthread_mutex_t cpu_mutex;
+    pthread_mutex_t server_mutex;
     cpu_struct * cpu1;
     cpu_struct * cpu2;
     int p[2]; //pipe
-    int performance; //lvl of performance
+    char * name;
     int active_cpus;//=1; //default value for number of cpu is 1
 
     int tasks_done;//=0;
     int maintenance;//=0;
+    bool stopped; //=false
 
     server_struct_next * next;
 
@@ -133,22 +141,15 @@ typedef struct{
     int server_status;//2 high, 1 normal, 0 hasnt started yet, -1 stopped;
 
     stats_struct * stats;
-
-    pthread_mutex_t status_mutex; //for both status!!!!
-    
     //servers array data pointer
     server_struct * server;
  
-
-    pthread_mutex_t time_mutex, log_mutex, stats_mutex, tasks_mutex, scheduler_mutex, dispacher_mutex;
+    pthread_mutex_t status_mutex; //for both status!!!!
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex;
     //whenever we update the struct we need to lock this mutex
 
-    // Condition variables
-    pthread_cond_t time_update;
+    // Condition variable
     pthread_cond_t scheduler, dispacher;
-
-
-
 
 } shm_struct;
 
@@ -169,6 +170,7 @@ config_struct * config;          // Config struct
 
 pthread_t thread_time;          // Update time in shared memory
 
+sem_t sem_tasks;
 
 
 
@@ -186,12 +188,13 @@ void write_log(char * message,...);
 void end(int status);
 void terminate();
 void print_stats();
-void * time_update();
+void time_update();
 
 //task manager
-bool task_format(char * buffer);
-bool create_task(int id,int instructions, int max_time);
-void read_pipe();
+bool new_task(char * buffer);
+void insert_task_list(task_struct * task);
+bool write_unnamed_pipe(task_struct * current);
+void read_task_pipe();
 void * scheduler();
 void * dispacher();
 void task_manager();

@@ -74,6 +74,7 @@ void terminate(){
 	- finish time thread
 	- print_stats();
 	- end(EXIT_SUCCESS);
+
 	
 	*/
 	
@@ -147,6 +148,8 @@ void end(int status){
     free(shm->stats->op_by_server);
     free(shm->stats);
     free(shm);
+
+    sem_destroy(&sem_tasks);
     
     
     //config
@@ -160,7 +163,7 @@ void end(int status){
 }
 
 //used in thread time for update
-void * time_update() {
+void time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
     //TODO this thread is still not working idk whats wrong
