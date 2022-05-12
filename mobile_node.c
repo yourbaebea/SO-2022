@@ -70,8 +70,8 @@ int main(int argc, char *argv[]){
     
     int pid= getpid();
     
-    print("mobile node with pid: %d", getpid());
-    print("mobile node:\ntotal tasks: %d\ninterval:%d\ninstructions%d\nmax time:%d", total_tasks,interval, instructions, max_time_task);
+    //print("mobile node with pid: %d", getpid());
+    print("mobile node\n\t-total tasks: %d\n\t-interval:%d\n\t-instructions%d\n\t-max time:%d", total_tasks,interval, instructions, max_time_task);
     
 
     int fd, i;
@@ -85,19 +85,23 @@ int main(int argc, char *argv[]){
     }
     
    
-
+    print("sending %d tasks to the pipe\n", total_tasks);
     for(i=0; i<total_tasks; i++){
         //ID tarefa:Nº de instruções (em milhares):Tempo máximo para execução
-        print("pid=%d i=%d id=%d%d", pid, i, pid, i);
+        //print("pid=%d i=%d id=%d%d", pid, i, pid, i);
 
         sprintf(buffer, "%d%d:%d:%d\n", pid, i, instructions, max_time_task);
         write(fd, buffer, strlen(buffer)+1);
+        print("%d: sent\n", i);
         print(buffer);
-
-
-        sleep(interval);
+        if(i!=total_tasks-1){
+		print("waiting %d seconds....\n", interval);
+		sleep(interval);
+        }
     
     }
+    printf("done!\n");
+    
     
     close(fd);
     print("ended the program");

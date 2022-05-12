@@ -15,8 +15,8 @@ void * cpu(int parameters[2]){
         server = server->next;
     }
 
-    pthread_mutex_lock(&server->server_mutex);
-
+	print("%d inside cpu[%d], before server_mutex", id, parameters[1]);
+    //pthread_mutex_lock(&server->server_mutex);
     if(parameters[1]==1){
         cpu= server->cpu1;
         cpu->active=true;
@@ -27,15 +27,42 @@ void * cpu(int parameters[2]){
         cpu->active=false; //default starts with normal status, so only one cpu active
         cpu->busy=false;
     }
-    pthread_mutex_unlock(&server->server_mutex);
+    //pthread_mutex_unlock(&server->server_mutex);
+    print("%d inside cpu[%d], after server_mutex", id, parameters[1]);
 
-    free(parameters);
+    
+    print("inside cpu after params");
+    
+    pthread_mutex_lock(&shm->simulationstarted_mutex);
+    	shm->count_init++;
+    	print("%d inside cpu[%d], count init current=%d",  id, parameters[1], shm->count_init);	
+    pthread_mutex_unlock(&shm->simulationstarted_mutex);
+    
+    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+    print("%d inside cpu[%d], after simulation started",  id, parameters[1]);
    
+   
+    pthread_mutex_lock(&server->server_mutex); 
+    if(cpu->active==true){
+    	pthread_mutex_lock(&shm->dispacher_mutex);
+	shm->count_dispacher++; //add to the count
+	print("count dispacher is currently %d", shm->count_dispacher);
+	pthread_mutex_unlock(&shm->dispacher_mutex);
+	pthread_cond_signal(&shm->dispacher);
+	print("dispacher cond broadcasted");
+    }
+    pthread_mutex_unlock(&server->server_mutex);	
+    
+   free(parameters);
+      
     while(simulation_status()>=0){
+    	
+    	print("inside cpu, inside simulation");
 
         //its fine if inside its -1 bc its supossed to make it still run, the next time is not gonna enter
-        pthread_mutex_lock(&cpu->task_available_mutex);
+
         pthread_cond_wait(&cpu->task_available,&cpu->task_available_mutex);
+        pthread_mutex_lock(&cpu->task_available_mutex);
         //waiting for a new task to be processed;
 
         pthread_mutex_lock(&server->server_mutex);
@@ -50,13 +77,8 @@ void * cpu(int parameters[2]){
         pthread_mutex_unlock(&cpu->task_available_mutex);
 
         sleep(cpu->task->instructions / cpu->mips);
-
-
-        pthread_mutex_lock(&server->server_mutex);
-        cpu->busy=false;
-        pthread_mutex_unlock(&server->server_mutex);
-
-
+        
+        
         //add to stats AFTER BEING DONE
         pthread_mutex_lock(&shm->stats_mutex);
         shm->stats->tasks_done++;
@@ -65,10 +87,21 @@ void * cpu(int parameters[2]){
         pthread_mutex_unlock(&shm->stats_mutex);
         cpu->task=NULL;
 
-        //UPDATE DISPACHER COND VAR
-        pthread_mutex_lock(&shm->dispacher_mutex);
-        pthread_cond_signal(&shm->dispacher);
-        pthread_mutex_unlock(&shm->dispacher_mutex);
+
+        pthread_mutex_lock(&server->server_mutex);
+        cpu->busy=false;
+        
+        if(server->stopped==false){
+		pthread_mutex_lock(&shm->dispacher_mutex);
+		shm->count_dispacher++; //add to the count
+		pthread_mutex_unlock(&shm->dispacher_mutex);
+		pthread_cond_broadcast(&shm->dispacher);
+        }
+        else{
+        	cpu->active=false;
+        }
+        
+        pthread_mutex_unlock(&server->server_mutex);
 
     }
 
@@ -100,9 +133,9 @@ void * read_unnamed_pipe(server_struct * server){
             server->cpu1->task= copy(temp);
 
             //do i need this?
-            pthread_mutex_lock(&server->cpu1->task_available_mutex);
+            //pthread_mutex_lock(&server->cpu1->task_available_mutex);
             pthread_cond_signal(&server->cpu1->task_available);
-            pthread_mutex_unlock(&server->cpu1->task_available_mutex);
+            //pthread_mutex_unlock(&server->cpu1->task_available_mutex);
             
         }
 
@@ -140,13 +173,14 @@ void edge_server(int id) {
 
     int parameters[2];
     parameters[0]=id;
-
-
     parameters[1]=1;
+    
     pthread_create(&thread_cpu1, NULL, cpu,(void *) parameters);
 
-    parameters[1]=2;
-    pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters);
+    int parameters2[2];
+    parameters2[0]=id;
+    parameters2[1]=2;
+    pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters2);
 
     print("creating thread to read unnamed pipe");
     pthread_create(&thread_read_pipe, NULL, read_unnamed_pipe,(void *) server);
@@ -155,10 +189,19 @@ void edge_server(int id) {
     msg_struct msg;
     msg_struct reply;
     msg_struct confirmation;
+    
+    pthread_mutex_lock(&shm->simulationstarted_mutex);
+    	shm->count_init++;
+    	print("count init current=%d", shm->count_init);	
+    pthread_mutex_unlock(&shm->simulationstarted_mutex);
+    
+    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+    print("%d after simulation started",  id);
 
     while(simulation_status()>=0){
-
+    
         msgrcv(mqid, &msg, sizeof(msg_struct), id, 0);
+        print("edge server, msgrcv");
 
         //stop all things
         pthread_mutex_lock(&server->server_mutex);
@@ -191,16 +234,31 @@ void edge_server(int id) {
         msgsnd(mqid, &reply, sizeof(msg_struct), 0);
 
         msgrcv(mqid, &confirmation, sizeof(msg_struct), id, 0);
+        
+        pthread_mutex_lock(&shm->status_mutex);
+    	int s=shm->server_status;
+    	pthread_mutex_unlock(&shm->status_mutex);
 
-        //stop all things
+        //restart all things
         pthread_mutex_lock(&server->server_mutex);
         server->stopped=false;
+        server->active_cpus=s;
         server->cpu1->active=true;
-        if(shm->server_status==2){
+        if(server->active_cpus==2){
             server->cpu2->active= true;
         }
         pthread_mutex_unlock(&server->server_mutex);
-
+        
+        
+        //send cond var
+        
+        pthread_mutex_lock(&shm->dispacher_mutex);
+	shm->count_dispacher++; //add to the count
+        if(s==2){
+            shm->count_dispacher++; //add to the count
+        }
+        pthread_mutex_unlock(&shm->dispacher_mutex);
+        pthread_cond_signal(&shm->dispacher);
 
     }
 

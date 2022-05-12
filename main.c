@@ -128,6 +128,17 @@ void start(char * config_file){
     }
 
     print("CONFIG FILE DONE");
+    
+    
+    
+    //open log file
+    print("OPENING LOG FILE");
+    fclose(fopen(LOG_FILE, "w")); //clear if the previous run ended and log wasnt cleared
+    log_file = fopen(LOG_FILE, "a");
+    if(log_file == NULL){
+        print("ERROR OPENING LOG FILE");
+        end(EXIT_FAILURE);
+    }
 
 
     //ppid = getpid();
@@ -201,16 +212,16 @@ void start(char * config_file){
         print("server in shm %s", temp->name);
     }
     
+    /*
+    pthread_mutexattr_t attrmutex;
+    pthread_condattr_t cattr;
     
-    
-    print("OUTSIDE SHM");
-
-    //just to make them sharable between diferent processes!
     pthread_mutexattr_init(&attrmutex);
     pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
     pthread_condattr_init(&cattr);
     pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-    pthread_cond_init(&shm->simulation,&cattr);
+    */
+    /*
     pthread_cond_init(&shm->dispacher,&cattr);
     pthread_cond_init(&shm->scheduler,&cattr);
     pthread_mutex_init(&shm->status_mutex,&attrmutex);
@@ -219,14 +230,30 @@ void start(char * config_file){
     pthread_mutex_init(&shm->stats_mutex,&attrmutex);
     pthread_mutex_init(&shm->dispacher_mutex,&attrmutex);
     pthread_mutex_init(&shm->scheduler_mutex,&attrmutex);
-
+    */
+    
+    pthread_cond_init(&shm->dispacher,NULL);
+    pthread_cond_init(&shm->scheduler,NULL);
+    pthread_cond_init(&shm->simulationstarted,NULL);
+    pthread_mutex_init(&shm->status_mutex,NULL);
+    pthread_mutex_init(&shm->time_mutex,NULL);
+    pthread_mutex_init(&shm->log_mutex,NULL);
+    pthread_mutex_init(&shm->stats_mutex,NULL);
+    pthread_mutex_init(&shm->dispacher_mutex,NULL);
+    pthread_mutex_init(&shm->scheduler_mutex,NULL);
+    pthread_mutex_init(&shm->simulationstarted_mutex,NULL);
+    //pthread_condattr_destroy(&cattr);
+    //pthread_mutexattr_destroy(&attrmutex);
+    
     
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
     pthread_mutex_unlock(&shm->status_mutex);
+    shm->count_init=0;
+    shm->count_dispacher=0;
     
-    print("AFTER MUTEX");
+    //print("AFTER MUTEX");
     
 
         
@@ -240,32 +267,27 @@ void start(char * config_file){
     shm->stats->tasks_refused=0;
     shm->stats->tasks_by_server= (int*) malloc(sizeof(int) * config->edge_server_number);
     shm->stats->op_by_server=(int*) malloc(sizeof(int) * config->edge_server_number);
+    
+    for(i=0; i<config->edge_server_number; i++){
+    	shm->stats->tasks_by_server[i]=0;
+    	shm->stats->op_by_server[i]=0;
+    }
+    
     pthread_mutex_unlock(&shm->stats_mutex);
     
-    print("AFTER STATS");
+    //print("AFTER STATS");
 
 
     //sem tasks
     sem_init(&sem_tasks, 0, 1);
     
-    print("AFTER SEM");
-
-
-    //open log file
-    print("OPENING LOG FILE");
-    fclose(fopen(LOG_FILE, "w")); //clear if the previous run ended and log wasnt cleared
-    log_file = fopen(LOG_FILE, "a");
-    if(log_file == NULL){
-        print("ERROR OPENING LOG FILE");
-        end(EXIT_FAILURE);
-    }
-
-
+    //print("AFTER SEM");
 
     if((mqid = msgget(IPC_PRIVATE, IPC_CREAT|0700)) == -1) {
         printf ("Error on MQ creation\n");
         end(EXIT_FAILURE);
     }
+    
    
 }
 
@@ -276,18 +298,9 @@ int main(int argc, char *argv[]){
     }
     if(argc == 3 && strcmp(argv[2], "debug") == 0) debug = true;
 
-    write_log("OFFLOAD SIMULATOR STARTING");
-
-    signal(SIGINT, terminate);
-    signal (SIGTSTP,print_stats);
-
-    sigemptyset(&block_sigint);
-    sigaddset(&block_sigint, SIGINT);
-    sigprocmask (SIG_BLOCK, &block_sigint, NULL);
-
 
     print("SYSTEM MANAGER");
-
+   
     start(argv[1]);
 
     print("START DONE");
@@ -302,20 +315,27 @@ int main(int argc, char *argv[]){
         maintenance_manager();
     }
     else {
-        sigprocmask (SIG_UNBLOCK, &block_sigint, NULL);
+       
         print("SYSTEM MANAGER AFTER FORKS");
         //this continues to be the SYSTEM MANAGER
 
 
         print("before time");
+        
+        signal(SIGINT, terminate);
+    	signal (SIGTSTP,print_stats);
+    	sigemptyset(&block_sigint);
+    	sigaddset(&block_sigint, SIGINT);
+
 
         //pthread_create(&thread_time, NULL, time_update, NULL);
-        
         while(1){
-            time_update();
+        	time_update();
+        }
+       
+        
         //idk what the main does after this?
         //maybe replace thread time with this
-        }
 
         wait(NULL);
     }

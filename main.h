@@ -40,7 +40,6 @@ how to i stop the cond var wait errors?
 
 #define LOG_FILE "log.txt"
 #define TASK_PIPE "TASK_PIPE"
-#define START_COUNT 10
 #define BUF_SIZE 1024
 #define MAINTENANCE_MINIMUM 1 //value defined by project but not in the config file
 #define MAINTENANCE_MAXIMUM 5 //value defined by project but not in the config file
@@ -140,21 +139,19 @@ typedef struct{
     int time;
     int status; // 1 ready/running,0 hasnt started yet, -1 needs to end/waiting to end, -2 end
     int server_status;//2 high, 1 normal, 0 hasnt started yet, -1 stopped;
-
-    //bool available; //true, there is an available cpu
-
+    int count_init;
+    int count_dispacher;
     stats_struct * stats;
     //servers array data pointer
     server_struct * server;
- 
-    pthread_mutex_t status_mutex; //for both status!!!!
+
+    pthread_mutex_t status_mutex, simulationstarted_mutex; //for both status!!!!
     pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex;
     //whenever we update the struct we need to lock this mutex
 
     // Condition variable
     pthread_cond_t scheduler, dispacher;
-    pthread_cond_t simulation;
-    int start;
+    pthread_cond_t simulationstarted;
 
 } shm_struct;
 
@@ -162,14 +159,11 @@ typedef struct{
 
 //---------------------- global vars ---------------------------------
 bool debug=false;
+
 FILE* log_file;                 // Log file pointer
 shm_struct * shm;
 config_struct * config;
 task_struct * tasklist;
-pthread_mutexattr_t attrmutex;
-pthread_condattr_t cattr;
-sigset_t block_sigint;
-
 
 //TODO
 int mqid;
@@ -179,6 +173,7 @@ config_struct * config;          // Config struct
 
 pthread_t thread_time;          // Update time in shared memory
 
+sigset_t block_sigint;
 sem_t sem_tasks;
 
 
@@ -203,10 +198,12 @@ int current_time();
 //task manager
 bool new_task(char * buffer);
 void insert_task_list(task_struct * task);
+void remove_task(task_struct * before, bool success);
 bool write_unnamed_pipe(task_struct * current);
 void read_task_pipe();
 void * scheduler();
 void * dispacher();
+bool dispatch_task();
 void task_manager();
 
 //edge server

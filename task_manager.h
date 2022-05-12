@@ -2,6 +2,27 @@
 #define TASK_MANAGER_H
 #include "main.h"
 
+void print_list(){
+	printf("- current task list: ");
+	task_struct * p=tasklist;
+	if(p==NULL){
+		print("EMPTY\n");
+		return;
+	}
+	
+	while(p!=NULL){
+		printf("%d ->", p->id);
+		p=p->next;
+	}
+	printf("end\n");
+}
+
+
+
+void print_task(task_struct * t){
+    if(debug) printf("Task: %d, final time: %d, init: %d max: %d priority: %d\n", t->id, t->time_start+ t->time_max, t->time_start, t->time_max, t->priority);
+}
+
 //transform from pipe to task
 bool new_task(char * buffer){
     char temp [BUF_SIZE];
@@ -26,6 +47,7 @@ bool new_task(char * buffer){
 }
 
 void insert_task_list(task_struct * task){
+	print_task(task);
 
     pthread_mutex_lock(&shm->stats_mutex);
     shm->stats->tasks_total++;
@@ -34,22 +56,19 @@ void insert_task_list(task_struct * task){
 
     //wait
     sem_wait(&sem_tasks);
-    print("current tasklist");
     if(tasklist==NULL){
-        //task list created
         tasklist = task;
-        print_task(task);
+        print_list();
+        sem_post(&sem_tasks);
+        return;
     }
-    else{
-        task_struct * p;
-        p= tasklist;
-        while(p->next!=NULL){
-            print_task(task);
-            p = p->next;
-        }
-        p->next= task;
-    }
-    print("tasklist done");
+    
+    task_struct * p= tasklist;
+	while(p->next!=NULL){
+	    p = p->next;
+	}
+    p->next= task;
+    print_list();
 
     sem_post(&sem_tasks);
 
@@ -59,35 +78,50 @@ void insert_task_list(task_struct * task){
 
 }
 
-void remove_task(task_struct * before, task_struct * current, bool success){
+void remove_task(task_struct * before, bool success){
 
     if(success){
-        print("Task %d is being sent to the cpu", current->id);
-        print_task(current);
+        print("Task %d is being sent to the cpu");
     }
     else{
-        write_log("Task %d expired and was never executed", current->id);
-        print_task(current);
+        write_log("Task %d expired and was never executed", before->next->id);
+        //print_task(current);
         pthread_mutex_lock(&shm->stats_mutex);
         shm->stats->tasks_refused++;
         pthread_mutex_unlock(&shm->stats_mutex);
 
     }
-
+    
+    if(tasklist==NULL){
+    	print("tasklist is empty");
+    	return;
+    }
+    
+    if(before->next==NULL){
+    	print("task to remove is empty");
+    	return;
+    }
+    
+    
+    task_struct * del;
+	
     if(before==NULL){
         print("deleting first in list");
-        tasklist = current->next;
+        del=tasklist;
+        tasklist = tasklist->next;
+        del->next=NULL;
+        free(del);
+        print_list();
+        return;
     }
-    else{
-        print("deleting inside list");
-        before->next= current->next;
-    }
-
     
-    //if current->next==NULL there is no problem it means its the end of the list
-    
-    free(current);
-    return;
+    print("deleting inside list");
+    del=before->next;
+    before->next= before->next->next;
+    del->next=NULL;
+    free(del);
+    print_list();
+    return; 
 }
 
 bool write_unnamed_pipe(task_struct * current){
@@ -101,7 +135,7 @@ bool write_unnamed_pipe(task_struct * current){
         else{
             temp = temp->next;
         }
-
+	print("task manager bf server mutex");
         pthread_mutex_lock(&temp->server_mutex);
         if(!temp->stopped){
         if( (!temp->cpu1->busy && temp->cpu1->active) || (!temp->cpu2->busy && temp->cpu2->active)){
@@ -117,10 +151,12 @@ bool write_unnamed_pipe(task_struct * current){
             exit(0);
             */
            pthread_mutex_unlock(&temp->server_mutex);
+           print("task manager af server mutex");
            return true;
         }
         }
         pthread_mutex_unlock(&temp->server_mutex);
+        print("task manager af server mutex");
 
 
     }
@@ -211,8 +247,9 @@ void * scheduler(){
             // currenttime - maxwaittime -> how long before it expires, the lowest the more urgent
 
             
-            if(p->time_max + p->time_start >= current_time()){
-                remove_task(p, p->next, false);
+            if(p->time_max + p->time_start <= current_time()){
+            	print("%d <= %d line 220\n", p->time_max + p->time_start, current_time());
+                remove_task(p, false);
             }
             else{
                 p=p->next;
@@ -226,10 +263,13 @@ void * scheduler(){
         //checking the first task in list last to make sure if we need to delete we are replacing with an already verified tasks
         if(p!=NULL){
         
-            p->priority= p->time_start + (current_time() - p->time_max + p->time_start) ;
+            p->priority= p->time_max - (current_time() - p->time_start) ;
             
-            if(p->time_max + p->time_start >= current_time()) remove_task(NULL, p,false);
+            if(p->time_max + p->time_start <= current_time()){
+            print("%d <= %d line 238\n", p->time_max + p->time_start, current_time());
+            remove_task(NULL,false);
 
+        	}
         }
        
 
@@ -256,26 +296,63 @@ void * dispacher(){
     print("THREAD DISPACHER CREATED");
 
 
-    print("waiting for cond wait");
-    pthread_cond_wait(&shm->simulation,&shm->status_mutex);
-
-
 
     while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside dispacher");
 
-        pthread_mutex_lock(&shm->dispacher_mutex);
+        //pthread_mutex_lock(&shm->dispacher_mutex);
         print("waiting cond var dispacher");
         pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
         print("cond var dispacher wait done!");
-        pthread_mutex_unlock(&shm->dispacher_mutex);
-
-        if(simulation_status()<0){
-            break;
+        //pthread_mutex_unlock(&shm->dispacher_mutex);
+	bool okay=true;
+	int count;
+	while(okay==true){
+		pthread_mutex_lock(&shm->dispacher_mutex);
+		print("count dispacher %d", shm->count_dispacher);
+		if(shm->count_dispacher>=1){
+			okay=true;
+			//count_dispacher--;
+		}
+		else{okay=false;}
+		//this will be the last cycle of this while
+		pthread_mutex_unlock(&shm->dispacher_mutex);
+		
+		if(simulation_status()<0){
+		    okay=false; //just to be safe
+		}
+		
+		if(okay==true){
+			sem_wait(&sem_tasks);
+			bool check= dispatch_task();
+			sem_post(&sem_tasks);
+			
+			 if(check==true){
+			 	pthread_mutex_lock(&shm->dispacher_mutex);
+				print("success dispacher");
+				shm->count_dispacher--;
+				pthread_mutex_unlock(&shm->dispacher_mutex);
+		
+		 	}
+		 	else{
+		 		print("dispatch did not work probably bc tasklist is empty! We could add here a cond var scheduler to know when a new task is added but not worth it!");
+		 		sleep(1);
+		 	}
+		}
+		
         }
 
-        sem_wait(&sem_tasks);
+        //TODO
+    }
 
+    pthread_exit(NULL);
+    return NULL;
+
+}
+
+
+
+bool dispatch_task(){
         task_struct * p;
         int next;
         task_struct * save_before;
@@ -283,11 +360,17 @@ void * dispacher(){
 
         p= tasklist;
         next=INT_MAX;
-
+        
+        if(p==NULL){
+        	print("dispatch is empty, no tasks!");
+        	return false;
+        }
+        
         while(p!=NULL && p->next!=NULL){
 
-            if(p->next->time_max + p->next->time_start >= current_time()){
-                remove_task(p, p->next,false);
+            if(p->next->time_max + p->next->time_start <= current_time()){
+            print("%d <= %d line 294\n", p->time_max + p->time_start, current_time());
+                remove_task(p,false);
             }
             else{
                 if(p->next->priority< next){
@@ -307,8 +390,10 @@ void * dispacher(){
 
         //checking the first task in list last to make sure if we need to delete we are replacing with an already verified tasks
         if(p!=NULL){
-            if(p->time_max + p->time_start >= current_time()){
-                remove_task(NULL, p,false);
+            if(p->time_max + p->time_start <= current_time()){
+            print("%d <= %d line 316\n", p->time_max + p->time_start, current_time());
+                remove_task(NULL,false);
+                
             }
             else{
                 if(p->priority< next){
@@ -320,50 +405,44 @@ void * dispacher(){
             }
         
         }
+        
+        if(tasklist==NULL || next==INT_MAX ){
+        	print("after searching all, tasklist is empty, we deleted all");
+        	return false;
+        }
 
-        if(next<INT_MAX) if(write_unnamed_pipe(save_current)) remove_task(save_before,save_current, true);
+        if(write_unnamed_pipe(save_current)){
+		print("%d <= %d line 332\n", p->time_max + p->time_start, current_time());
+		remove_task(save_before, true);
+		return true;
+         }
+         return false;
             //DISPACHER CAN BE USED WHEN IN MAINTENANCE DONT REMOVE IN CASE IT IS, already done!
             
-        sem_post(&sem_tasks);
-
-        sleep(1);
-        //TODO
-        //THIS SHOULD NOT HAVE THIS SLEEP 1 IT ONLY SHOULD BE CALLED WHEN THE SEM IS RELEASED!!!!!!!!!!!
-    }
-
-    pthread_exit(NULL);
-    return NULL;
-
 }
 
 //TODO
 void task_manager() {
     //ignore signal
-    signal(SIGINT, SIG_IGN);
-    signal(SIGTSTP, SIG_IGN);
     write_log("PROCESS TASK_MANAGER CREATED");
-    //print("TASKMANAGER PID: %d", getpid());
 
-    //signal(SIGUSR1, print_stats);
-
-    //create PROCESS of Servers, check shm for number and name
-    //fork()
-    int i;
-    //j=0;
-    for(i=0; i< config->edge_server_number; i++){
-        if(fork()){
-            edge_server(i);
-        }
-    }
     
-   
-
     pthread_t thread_scheduler, thread_dispacher;
     
     pthread_create(&thread_scheduler, NULL, scheduler, NULL);
     pthread_create(&thread_dispacher, NULL, dispacher, NULL);
 
-	read_task_pipe();
+    int i;
+    //j=0;
+    for(i=0; i< config->edge_server_number; i++){
+        if(fork()){
+        	print("--- server %d of %d", i,config->edge_server_number);
+            edge_server(i);
+        }
+    }
+    
+  
+    read_task_pipe();
 	
 
     wait(NULL);

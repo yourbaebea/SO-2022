@@ -15,6 +15,9 @@ void monitor() {
     task_struct * temp;
     server_struct * server;
     int change;
+    
+    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+    print("after simulation started");
 
     while(simulation_status()>=0){
 
@@ -76,10 +79,12 @@ void monitor() {
             print("MONITOR CHANGING STATUS IN SERVERS %d", change);
             server=shm->server;
             while(server->next!=NULL){
+            	print("monitor bf server mutex");
                 pthread_mutex_lock(&server->server_mutex);
                 if(change==1) server->cpu2->active=true;
                 if(change==-1) server->cpu2->active=false;
                 pthread_mutex_unlock(&server->server_mutex);
+                print("monitor af server mutex");
                 server=server->next;
             }
 
@@ -88,11 +93,13 @@ void monitor() {
 
 
        //stop all things
+       print("monitor bf server mutex");
         pthread_mutex_lock(&server->server_mutex);
         if(server->stopped==false){ 
             server->cpu2->active= true;
         }
         pthread_mutex_unlock(&server->server_mutex);
+        print("monitor af server mutex");
 
     }
 

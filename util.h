@@ -37,10 +37,6 @@ void print(char * message, ...){
     }
 }
 
-void print_task(task_struct * t){
-    if(debug) printf("Task: %d, final time: %d, init: %d max: %d priority: %d\n", t->id, t->time_start+ t->time_max, t->time_start, t->time_max, t->priority);
-}
-
 //write info in log and terminal at the same time
 void write_log(char * message, ...){
     char buffer[BUF_SIZE];
@@ -70,7 +66,6 @@ void write_log(char * message, ...){
 
 // called by the signal or by the named pipe to end the simulation
 void terminate(){
-    signal(SIGINT, SIG_IGN); //ignore all signals after the first
 	//update shm status to ending, this should end all threads EXCEPT the time, monitor, task manager, etc etc
 	/* 
 	wait for it to end:
@@ -78,9 +73,6 @@ void terminate(){
 	- finish time thread
 	- print_stats();
 	- end(EXIT_SUCCESS);
-    //pthread_mutexattr_destroy(&attrmutex); do this in the terminate!
-    
-    end all mutexes
 
 	
 	*/
@@ -174,25 +166,27 @@ void time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
     //TODO this thread is still not working idk whats wrong
-    int total;
     
-    pthread_mutex_lock(&shm->status_mutex);
-    
-    shm->status=1;
-    shm->server_status=1;
-        
-    pthread_mutex_lock(&shm->status_mutex);
+    while(simulation_status()==0){
+    	print("current count=%d", shm->count_init);
+    	pthread_mutex_lock(&shm->simulationstarted_mutex);
+    	if(shm->count_init>=(config->edge_server_number*3)){
+    		shm->status=1;
+    		shm->server_status=1;
+    		pthread_mutex_lock(&shm->time_mutex);
+		    print("thread updating time started");
+		    shm->time=0;
+		    pthread_mutex_unlock(&shm->time_mutex);
+		    pthread_cond_broadcast(&shm->simulationstarted);
+    		print("status broadcasted");	   
+    	}
+    	
+    	pthread_mutex_unlock(&shm->simulationstarted_mutex);
+    	sleep(1);
+    }
+      
 
-    pthread_mutex_unlock(&shm->status_mutex);
-    print("broadcasting cond var simulation");
-    pthread_cond_signal(&shm->simulation);
-    
-    pthread_mutex_lock(&shm->time_mutex);
-    print("thread updating time started");
-    shm->time=0;
-    pthread_mutex_unlock(&shm->time_mutex);
-
-    print("OFFLOAD SIMULATOR STARTED");
+    write_log("OFFLOAD SIMULATOR STARTING");
 
     while (simulation_status() > 0) {
     	print("time: %d", shm->time);
