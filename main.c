@@ -171,27 +171,50 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     
+    
+    if(init_mutex()==false){
+    	print("ERROR IN CREATE MUTEXES");
+        end(EXIT_FAILURE);
+    }
+    
+    
     int i;
-       
     server_struct * p;
     server_node * paux;
+    pthread_mutexattr_t attrmutex;
+    if(pthread_mutexattr_init(&attrmutex)!=0) end(EXIT_FAILURE);
+    pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
     
     for(i=0; i<config->edge_server_number; i++){
     	server_struct * temp= (server_struct *) malloc(sizeof(server_struct));
     	
+    	temp->server_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    	if( pthread_mutex_init(&temp->server_mutex,&attrmutex) !=0) end(EXIT_FAILURE);
+        
     	temp->cpu1= (cpu_struct *) malloc(sizeof(cpu_struct));
     	temp->cpu2= (cpu_struct *) malloc(sizeof(cpu_struct));
-    	temp->cpu1->mips= paux->cpu1;
-        temp->cpu2->mips= paux->cpu2;
-        temp->name=paux->name;
-        /*
-                
-        
+    	
+    	temp->cpu1->task_available_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    	if( pthread_mutex_init(&temp->cpu1->task_available_mutex,&attrmutex) !=0) end(EXIT_FAILURE);
+    	
+    	temp->cpu1->task_available = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    	if( pthread_cond_init(&temp->cpu1->task_available,NULL) !=0) end(EXIT_FAILURE);
+    	
+    	temp->cpu2->task_available_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    	if( pthread_mutex_init(&temp->cpu2->task_available_mutex,&attrmutex) !=0) end(EXIT_FAILURE);
+    	
+    	temp->cpu2->task_available = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    	if( pthread_cond_init(&temp->cpu2->task_available,NULL) !=0) end(EXIT_FAILURE);
+    	
+    	temp->cpu1->task=NULL;
+    	temp->cpu2->task=NULL;
+    	
+        temp->id=i;     
         temp->maintenance=0;
         temp->tasks_done=0;
         temp->stopped=false;
         temp->active_cpus=1;
-        */
+
         
         if (pipe(temp->p) == -1) {
             print("ERROR IN CREATE UNNAMED PIPE");
@@ -208,64 +231,23 @@ void start(char * config_file){
             p = p->next;
             paux=paux->next;
         }
-        temp->name=paux->name; 
-        print("server in shm %s", temp->name);
+        temp->name=paux->name;
+        temp->cpu1->mips= paux->cpu1;
+        temp->cpu2->mips= paux->cpu2;
+        print("server in shm %s", temp->name);        
     }
     
     
-    pthread_mutex_t *temp_mutex;
-    temp_mutex=(pthread_mutex_t*) mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    
-    
-    pthread_mutexattr_t attrmutex;
-    pthread_condattr_t cattr;
-    
-    pthread_mutexattr_init(&attrmutex);
-    pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
-    pthread_condattr_init(&cattr);
-    pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-    pthread_cond_init(&shm->dispacher,&cattr);
-    pthread_cond_init(&shm->scheduler,&cattr);
-    pthread_mutex_init(&shm->status_mutex,&attrmutex);
-    pthread_mutex_init(&shm->time_mutex,&attrmutex);
-    pthread_mutex_init(&shm->log_mutex,&attrmutex);
-    pthread_mutex_init(&shm->stats_mutex,&attrmutex);
-    pthread_mutex_init(&shm->dispacher_mutex,&attrmutex);
-    pthread_mutex_init(&shm->scheduler_mutex,&attrmutex);
-
-    
-   
-    //pthread_condattr_destroy(&cattr);
-    //pthread_mutexattr_destroy(&attrmutex);
-    
-    
-    /*
-    
-    pthread_cond_init(&shm->dispacher,NULL);
-    pthread_cond_init(&shm->scheduler,NULL);
-    pthread_cond_init(&shm->simulationstarted,NULL);
-    pthread_mutex_init(&shm->status_mutex,NULL);
-    pthread_mutex_init(&shm->time_mutex,NULL);
-    pthread_mutex_init(&shm->log_mutex,NULL);
-    pthread_mutex_init(&shm->stats_mutex,NULL);
-    pthread_mutex_init(&shm->dispacher_mutex,NULL);
-    pthread_mutex_init(&shm->scheduler_mutex,NULL);
-    pthread_mutex_init(&shm->simulationstarted_mutex,NULL);
-    
-    */
-    
+    pthread_mutexattr_destroy(&attrmutex);
     
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
     pthread_mutex_unlock(&shm->status_mutex);
+    
     shm->count_init=0;
     shm->count_dispacher=0;
     
-    //print("AFTER MUTEX");
-    
-
-        
     
     //STATS
     shm->stats= (stats_struct *) malloc(sizeof(stats_struct));
@@ -301,7 +283,41 @@ void start(char * config_file){
 }
 
 
-int init_mutex(){
+bool init_mutex(){
+    pthread_mutexattr_t attrmutex;
+    pthread_condattr_t cattr;
+    if(pthread_mutexattr_init(&attrmutex)!=0) return false;
+    pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
+    
+    if(pthread_condattr_init(&cattr)!=0) return false;
+    pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+    
+    shm->dispacher_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->scheduler_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->status_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->time_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->log_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->stats_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    
+    
+    shm->dispacher = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    shm->scheduler = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    
+    if( pthread_cond_init(&shm->dispacher,&cattr) !=0) return false;
+    if( pthread_cond_init(&shm->scheduler,&cattr)!=0) return false;
+    if( pthread_mutex_init(&shm->status_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->time_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->log_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->stats_mutex,&attrmutex)!=0) return false;
+
+    if( pthread_mutex_init(&shm->dispacher_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->scheduler_mutex,&attrmutex)!=0) return false;
+    
+    pthread_condattr_destroy(&cattr);
+    pthread_mutexattr_destroy(&attrmutex);
+    
+    return true;   
+
 }
 
 int main(int argc, char *argv[]){
@@ -324,13 +340,13 @@ int main(int argc, char *argv[]){
     	sigaddset(&block_sigint, SIGINT);
 
     if(fork()) {
-        //task_manager();
+        task_manager();
     }
     if(fork()) {
-        //monitor();
+        monitor();
     }
     if(fork()) {
-        //maintenance_manager();
+        maintenance_manager();
     }
     else {
        
@@ -341,6 +357,8 @@ int main(int argc, char *argv[]){
         while(simulation_status()>=-2){
         //not sure what to do here?
         sleep(1);
+        print("main");
+        
         }
         
         //idk what the main does after this?

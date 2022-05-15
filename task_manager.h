@@ -246,9 +246,10 @@ void * scheduler(){
             // time start -> the oldest has a lower time
             // currenttime - maxwaittime -> how long before it expires, the lowest the more urgent
 
+	    print_task(p);
             
-            if(p->time_max + p->time_start <= current_time()){
-            	print("%d <= %d line 220\n", p->time_max + p->time_start, current_time());
+            if(p->next->time_max + p->next->time_start <= current_time()){
+            	print("%d <= %d line 220\n", p->next->time_max + p->next->time_start, current_time());
                 remove_task(p, false);
             }
             else{
@@ -300,15 +301,14 @@ void * dispacher(){
     while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside dispacher");
 
-        //pthread_mutex_lock(&shm->dispacher_mutex);
+        pthread_mutex_lock(&shm->dispacher_mutex);
         print("waiting cond var dispacher");
         pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
         print("cond var dispacher wait done!");
-        //pthread_mutex_unlock(&shm->dispacher_mutex);
+        
 	bool okay=true;
-	int count;
+	//int count;
 	while(okay==true){
-		pthread_mutex_lock(&shm->dispacher_mutex);
 		print("count dispacher %d", shm->count_dispacher);
 		if(shm->count_dispacher>=1){
 			okay=true;
@@ -316,7 +316,6 @@ void * dispacher(){
 		}
 		else{okay=false;}
 		//this will be the last cycle of this while
-		pthread_mutex_unlock(&shm->dispacher_mutex);
 		
 		if(simulation_status()<0){
 		    okay=false; //just to be safe
@@ -328,19 +327,19 @@ void * dispacher(){
 			sem_post(&sem_tasks);
 			
 			 if(check==true){
-			 	pthread_mutex_lock(&shm->dispacher_mutex);
 				print("success dispacher");
 				shm->count_dispacher--;
-				pthread_mutex_unlock(&shm->dispacher_mutex);
 		
 		 	}
 		 	else{
 		 		print("dispatch did not work probably bc tasklist is empty! We could add here a cond var scheduler to know when a new task is added but not worth it!");
 		 		sleep(1);
+		 		okay=false;
 		 	}
 		}
 		
         }
+        pthread_mutex_unlock(&shm->dispacher_mutex);
 
         //TODO
     }
@@ -367,9 +366,9 @@ bool dispatch_task(){
         }
         
         while(p!=NULL && p->next!=NULL){
-
+	    print("%d <= %d line 316\n", p->time_max + p->time_start, current_time());
             if(p->next->time_max + p->next->time_start <= current_time()){
-            print("%d <= %d line 294\n", p->time_max + p->time_start, current_time());
+            print("%d <= %d line 294\n", p->next->time_max + p->next->time_start, current_time());
                 remove_task(p,false);
             }
             else{
@@ -390,6 +389,7 @@ bool dispatch_task(){
 
         //checking the first task in list last to make sure if we need to delete we are replacing with an already verified tasks
         if(p!=NULL){
+            print("%d <= %d line 316\n", p->time_max + p->time_start, current_time());
             if(p->time_max + p->time_start <= current_time()){
             print("%d <= %d line 316\n", p->time_max + p->time_start, current_time());
                 remove_task(NULL,false);
@@ -412,7 +412,7 @@ bool dispatch_task(){
         }
 
         if(write_unnamed_pipe(save_current)){
-		print("%d <= %d line 332\n", p->time_max + p->time_start, current_time());
+		print("%d <= %d line 332\n", save_current->time_max + save_current->time_start, current_time());
 		remove_task(save_before, true);
 		return true;
          }
@@ -426,11 +426,12 @@ void task_manager() {
     //ignore signal
     write_log("PROCESS TASK_MANAGER CREATED");
     
-    pthread_create(&thread_time, NULL, time_update, NULL);
+
 
     
     pthread_t thread_scheduler, thread_dispacher;
     
+    pthread_create(&thread_time, NULL, time_update, NULL); 
     pthread_create(&thread_scheduler, NULL, scheduler, NULL);
     pthread_create(&thread_dispacher, NULL, dispacher, NULL);
 
@@ -448,6 +449,7 @@ void task_manager() {
 	
 
     wait(NULL);
+    return;
     //keep the process alive untill the threads end
 
 }
