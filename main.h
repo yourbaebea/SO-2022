@@ -159,11 +159,11 @@ typedef struct{
     //servers array data pointer
     server_struct * server;
     
-    //task_struct * tasklist;
+    task_struct * tasklist;
     //add var to check current num de tasks
 
     pthread_mutex_t status_mutex, simulationstarted_mutex; //for both status!!!!
-    pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex;
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex, tasklist_mutex;
     //whenever we update the struct we need to lock this mutex
 
     // Condition variable
