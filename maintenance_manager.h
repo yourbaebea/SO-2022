@@ -9,7 +9,8 @@ int generate(int min, int max){
 }
 
 
-void * read_msg_queue(int value){
+void * read_msg_queue(void * args){
+    int value=*((int *) args);
     msg_struct reply;
     msg_struct msg;
 
@@ -97,7 +98,21 @@ void maintenance_manager() {
     //free(current);
     //free(msg);
 
+    /*print("OUTSIDE MAINTENANCE");
+    
+    sleep(2);
+    if(pthread_cancel(thread_maintenance)){
+    	pthread_join(thread_maintenance,NULL);
+    }
+    else{
+    	printf("error exiting the thread maintenance");
+    }
+    
+    wait(NULL);
+    */
+    
     print("leaving maintenance");
+    return;
 
 }
 

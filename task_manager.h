@@ -139,6 +139,8 @@ bool write_unnamed_pipe(task_struct * current){
         pthread_mutex_lock(&temp->server_mutex);
         if(!temp->stopped){
         if( (!temp->cpu1->busy && temp->cpu1->active) || (!temp->cpu2->busy && temp->cpu2->active)){
+            pthread_mutex_unlock(&temp->server_mutex);
+            close(temp->p[0]);
             write(temp->p[1], current, sizeof(task_struct));
             /*
             struct dirent data;
@@ -150,7 +152,7 @@ bool write_unnamed_pipe(task_struct * current){
             close(fileStatusPipe[0]);
             exit(0);
             */
-           pthread_mutex_unlock(&temp->server_mutex);
+           
            print("task manager af server mutex");
            return true;
         }
@@ -246,9 +248,10 @@ void * scheduler(){
             // time start -> the oldest has a lower time
             // currenttime - maxwaittime -> how long before it expires, the lowest the more urgent
 
+	    print_task(p);
             
-            if(p->time_max + p->time_start <= current_time()){
-            	print("%d <= %d line 220\n", p->time_max + p->time_start, current_time());
+            if(p->next->time_max + p->next->time_start <= current_time()){
+            	print("%d <= %d line 220\n", p->next->time_max + p->next->time_start, current_time());
                 remove_task(p, false);
             }
             else{
@@ -274,7 +277,6 @@ void * scheduler(){
        
 
         sem_post(&sem_tasks);
-
 
         //dont post sem, we need the sem to only be released in the insert_task_list
 
@@ -316,7 +318,7 @@ void * dispacher(){
 		}
 		else{okay=false;}
 		//this will be the last cycle of this while
-		pthread_mutex_unlock(&shm->dispacher_mutex);
+        pthread_mutex_unlock(&shm->dispacher_mutex);
 		
 		if(simulation_status()<0){
 		    okay=false; //just to be safe

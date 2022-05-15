@@ -209,7 +209,7 @@ void start(char * config_file){
     	temp->cpu1->task=NULL;
     	temp->cpu2->task=NULL;
     	
-        //temp->id=i;     
+        temp->id=i;     
         temp->maintenance=0;
         temp->tasks_done=0;
         temp->stopped=false;

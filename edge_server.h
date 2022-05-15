@@ -66,8 +66,9 @@ void * cpu(void * args){
         pthread_cond_wait(&cpu->task_available,&cpu->task_available_mutex);
         pthread_mutex_lock(&cpu->task_available_mutex);
         //waiting for a new task to be processed;
-
+        if(cpu->task!=NULL){
         pthread_mutex_lock(&server->server_mutex);
+        
         cpu->busy=true;
         pthread_mutex_unlock(&server->server_mutex);
 
@@ -75,7 +76,10 @@ void * cpu(void * args){
         cpu->task->time_acceptance= current_time();
         cpu->task->time_needed= cpu->task->instructions / cpu->mips;
         cpu->task->time_waiting= current_time()- cpu->task->time_start;
-
+        }
+        else{
+            print("available task but task null idk");
+        }
         pthread_mutex_unlock(&cpu->task_available_mutex);
 
         sleep(cpu->task->instructions / cpu->mips);
@@ -87,8 +91,9 @@ void * cpu(void * args){
         shm->stats->total_time_response+=cpu->task->time_waiting;
         shm->stats->tasks_by_server[id]++;
         pthread_mutex_unlock(&shm->stats_mutex);
-        cpu->task=NULL;
 
+        pthread_mutex_lock(&server->server_mutex);
+        cpu->task=NULL;
 
         pthread_mutex_lock(&server->server_mutex);
         cpu->busy=false;
@@ -105,6 +110,8 @@ void * cpu(void * args){
         
         pthread_mutex_unlock(&server->server_mutex);
 
+        pthread_mutex_unlock(&cpu->task_available_mutex);
+   
     }
 
 
@@ -123,10 +130,11 @@ task_struct * copy(task_struct * old){
 
 }
 
-void * read_unnamed_pipe(void * args){
-	server_struct * server = (server_struct *) args;
+void read_unnamed_pipe(server_struct * server){
+	//server_struct * server = (server_struct *) args;
     task_struct * temp= (task_struct*) malloc(sizeof(task_struct));
 
+    close(server->p[1]);
 
     while(read(server->p[0],&temp,sizeof(task_struct)) > 0)
     {
@@ -153,55 +161,15 @@ void * read_unnamed_pipe(void * args){
     
 }
 
-//TODO
-void edge_server(int id) {
-    //ignore signal
-    signal(SIGINT, SIG_IGN);
-    signal(SIGTSTP, SIG_IGN);
-
-    write_log("PROCESS EDGE SERVER CREATED");
-    print("edge server %d", id);
-
-    //inform Maintenance Manager by mq????
-
-
-    pthread_t thread_cpu1, thread_cpu2, thread_read_pipe;
-    server_struct* server; //= (server_struct*) malloc(sizeof(server_struct*));
-    //its just a pointer we dont need to alloc memory
-    server= shm->server;
-    for(int i=1; i<id; i++){
-        server = server->next;
-    }
-
-    print("creating threads of cpus");
-
-    int parameters[2];
-    parameters[0]=id;
-    parameters[1]=1;
+void * receive_msg(void * args){
+    //int id=*((int *) args);
+    server_struct * server = (server_struct *) args;
+    int id= server->id;
     
-    pthread_create(&thread_cpu1, NULL, cpu,(void *) parameters);
-
-    int parameters2[2];
-    parameters2[0]=id;
-    parameters2[1]=2;
-    pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters2);
-
-    print("creating thread to read unnamed pipe");
-    pthread_create(&thread_read_pipe, NULL, read_unnamed_pipe,(void *) server);
-
-
     msg_struct msg;
     msg_struct reply;
     msg_struct confirmation;
     
-    pthread_mutex_lock(&shm->simulationstarted_mutex);
-    	shm->count_init++;
-    	print("count init current=%d", shm->count_init);	
-    pthread_mutex_unlock(&shm->simulationstarted_mutex);
-    
-    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
-    print("%d after simulation started",  id);
-
     while(simulation_status()>=0){
     
         if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){
@@ -270,9 +238,52 @@ void edge_server(int id) {
         if(s==2){
             shm->count_dispacher++; //add to the count
         }
-        pthread_cond_broadcast(&shm->dispacher);
         pthread_mutex_unlock(&shm->dispacher_mutex);
+        pthread_cond_broadcast(&shm->dispacher);
     }
+    
+    pthread_exit(NULL);
+    return NULL;
+}
+
+
+//TODO
+void edge_server(int id) {
+    //ignore signal
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
+
+    write_log("PROCESS EDGE SERVER CREATED");
+    print("edge server %d", id);
+
+    //inform Maintenance Manager by mq????
+
+
+    pthread_t thread_cpu1, thread_cpu2, thread_msg;
+    server_struct* server; //= (server_struct*) malloc(sizeof(server_struct*));
+    //its just a pointer we dont need to alloc memory
+    server= shm->server;
+    for(int i=1; i<id; i++){
+        server = server->next;
+    }
+
+    print("creating threads of cpus");
+
+    int parameters[2];
+    parameters[0]=id;
+    parameters[1]=1;
+    
+    pthread_create(&thread_cpu1, NULL, cpu,(void *) parameters);
+
+    int parameters2[2];
+    parameters2[0]=id;
+    parameters2[1]=2;
+    pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters2);
+
+    pthread_create(&thread_msg, NULL, receive_msg,(void *) server);
+    
+    
+    read_unnamed_pipe(server);
     
     print("out of msgrcv cycle, ending");
 
