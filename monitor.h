@@ -106,10 +106,7 @@ void monitor() {
     server_struct * server;
     int change;
     
-    //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
-    
-    while(simulation_status()==0);
-    print("after simulation started");
+    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
 
     while(simulation_status()>=0){
     	print("monitor");

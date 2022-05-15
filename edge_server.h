@@ -55,7 +55,7 @@ void * cpu(void * args){
     }
     pthread_mutex_unlock(&server->server_mutex);	
     
-   free(parameters);
+   //free(parameters);
       
     while(simulation_status()>=0){
     	
@@ -281,6 +281,10 @@ void edge_server(int id) {
     pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters2);
 
     pthread_create(&thread_msg, NULL, receive_msg,(void *) server);
+    
+    pthread_mutex_lock(&shm->simulationstarted_mutex);
+    	shm->count_init++;
+    pthread_mutex_unlock(&shm->simulationstarted_mutex);
     
     
     read_unnamed_pipe(server);
