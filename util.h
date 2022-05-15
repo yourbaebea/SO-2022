@@ -20,7 +20,6 @@ int simulation_status(){
         pthread_cond_signal(&shm->dispacher);
     }
     pthread_mutex_unlock(&shm->status_mutex);
-    //print("SIM: %d", simulation);
 
     return simulation;
 
@@ -83,7 +82,7 @@ void terminate(){
         shm->status=-1;
     	pthread_mutex_unlock(&shm->status_mutex);
     	
-    	sleep(1);
+    	sleep(10);
     	
     	exit(EXIT_FAILURE);
 	
@@ -176,7 +175,7 @@ void * time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
     //TODO this thread is still not working idk whats wrong
-    /*
+    
     while(simulation_status()==0){
     	print("current count=%d", shm->count_init);
     	pthread_mutex_lock(&shm->simulationstarted_mutex);
@@ -194,19 +193,9 @@ void * time_update() {
     	pthread_mutex_unlock(&shm->simulationstarted_mutex);
     	sleep(1);
     }
-    */
-    
-    pthread_mutex_lock(&shm->status_mutex);  
-    shm->status=1;
-    shm->server_status=1;
-    pthread_mutex_unlock(&shm->status_mutex);
-    
+      
+
     write_log("OFFLOAD SIMULATOR STARTING");
-    
-    pthread_mutex_lock(&shm->time_mutex);
-    	print("thread updating time started");
-    	shm->time=0;
-    pthread_mutex_unlock(&shm->time_mutex);
 
     while (simulation_status() >=-1) {
     	print("time: %d", shm->time);

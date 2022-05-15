@@ -209,7 +209,7 @@ void start(char * config_file){
     	temp->cpu1->task=NULL;
     	temp->cpu2->task=NULL;
     	
-        temp->id=i;     
+        //temp->id=i;     
         temp->maintenance=0;
         temp->tasks_done=0;
         temp->stopped=false;
@@ -240,14 +240,18 @@ void start(char * config_file){
     
     pthread_mutexattr_destroy(&attrmutex);
     
+    
+    
+    
+    
     pthread_mutex_lock(&shm->status_mutex);  
     shm->status=0;
     shm->server_status=0;
     pthread_mutex_unlock(&shm->status_mutex);
-    
     shm->count_init=0;
     shm->count_dispacher=0;
     
+    //print("AFTER MUTEX");
     
     //STATS
     shm->stats= (stats_struct *) malloc(sizeof(stats_struct));
@@ -342,28 +346,30 @@ int main(int argc, char *argv[]){
     if(fork()) {
         task_manager();
     }
-    if(fork()) {
-        monitor();
-    }
-    if(fork()) {
-        maintenance_manager();
-    }
-    else {
-       
-        print("SYSTEM MANAGER AFTER FORKS");
-        //this continues to be the SYSTEM MANAGER
+    else{
+	    if(fork()) {
+		monitor();
+	    }
+	    else{
+		    if(fork()) {
+			maintenance_manager();
+		    }
+		    else {
+		       
+			print("SYSTEM MANAGER AFTER FORKS");
+			//this continues to be the SYSTEM MANAGER
 
 
-        while(simulation_status()>=-2){
-        //not sure what to do here?
-        sleep(1);
-        print("main");
-        
-        }
-        
-        //idk what the main does after this?
+			while(simulation_status()>=-2){
+			//not sure what to do here?
+			sleep(1);
+			}
+			
+			//idk what the main does after this?
 
-        
+			
+		    }
+	    }
     }
     
      wait(NULL);

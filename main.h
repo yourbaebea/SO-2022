@@ -112,7 +112,6 @@ typedef struct server_struct_aux{
     cpu_struct * cpu1;
     cpu_struct * cpu2;
     int p[2]; //pipe
-    int id;
     char * name;
     int active_cpus;//=1; //default value for number of cpu is 1
     int tasks_done;//=0;
@@ -210,14 +209,12 @@ void task_manager();
 
 //edge server
 void * cpu(void * args);
-void * receive_msg(void * args);
-void read_unnamed_pipe(server_struct * server);
+void * read_unnamed_pipe(void * args);
 void edge_server(int id);
 
 //maintenance manager
 //TODO void receives_messages();
 int generate(int min, int max);
-void * read_msg_queue(void * args);
 bool check(server_struct * s);
 void maintenance_manager();
 
