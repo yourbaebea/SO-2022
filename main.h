@@ -192,7 +192,7 @@ void write_log(char * message,...);
 void end(int status);
 void terminate();
 void print_stats();
-void time_update();
+void * time_update();
 int current_time();
 
 //task manager
@@ -207,7 +207,8 @@ bool dispatch_task();
 void task_manager();
 
 //edge server
-void * cpu(int parameters[2]);
+void * cpu(void * args);
+void * read_unnamed_pipe(void * args);
 void edge_server(int id);
 
 //maintenance manager

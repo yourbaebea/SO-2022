@@ -212,7 +212,11 @@ void start(char * config_file){
         print("server in shm %s", temp->name);
     }
     
-    /*
+    
+    pthread_mutex_t *temp_mutex;
+    temp_mutex=(pthread_mutex_t*) mmap(NULL, sizeof(pthread_mutex_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    
+    
     pthread_mutexattr_t attrmutex;
     pthread_condattr_t cattr;
     
@@ -220,8 +224,6 @@ void start(char * config_file){
     pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
     pthread_condattr_init(&cattr);
     pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-    */
-    /*
     pthread_cond_init(&shm->dispacher,&cattr);
     pthread_cond_init(&shm->scheduler,&cattr);
     pthread_mutex_init(&shm->status_mutex,&attrmutex);
@@ -230,7 +232,14 @@ void start(char * config_file){
     pthread_mutex_init(&shm->stats_mutex,&attrmutex);
     pthread_mutex_init(&shm->dispacher_mutex,&attrmutex);
     pthread_mutex_init(&shm->scheduler_mutex,&attrmutex);
-    */
+
+    
+   
+    //pthread_condattr_destroy(&cattr);
+    //pthread_mutexattr_destroy(&attrmutex);
+    
+    
+    /*
     
     pthread_cond_init(&shm->dispacher,NULL);
     pthread_cond_init(&shm->scheduler,NULL);
@@ -242,8 +251,8 @@ void start(char * config_file){
     pthread_mutex_init(&shm->dispacher_mutex,NULL);
     pthread_mutex_init(&shm->scheduler_mutex,NULL);
     pthread_mutex_init(&shm->simulationstarted_mutex,NULL);
-    //pthread_condattr_destroy(&cattr);
-    //pthread_mutexattr_destroy(&attrmutex);
+    
+    */
     
     
     pthread_mutex_lock(&shm->status_mutex);  
@@ -291,6 +300,10 @@ void start(char * config_file){
    
 }
 
+
+int init_mutex(){
+}
+
 int main(int argc, char *argv[]){
     if(argc >=4 || argc <= 1){
         printf("WRONG FORMAT, ./offload_simulator {configfile} [debug]\n");
@@ -304,15 +317,20 @@ int main(int argc, char *argv[]){
     start(argv[1]);
 
     print("START DONE");
+    
+    signal(SIGINT, terminate);
+    	signal (SIGTSTP,print_stats);
+    	sigemptyset(&block_sigint);
+    	sigaddset(&block_sigint, SIGINT);
 
     if(fork()) {
-        task_manager();
+        //task_manager();
     }
     if(fork()) {
-        monitor();
+        //monitor();
     }
     if(fork()) {
-        maintenance_manager();
+        //maintenance_manager();
     }
     else {
        
@@ -320,25 +338,18 @@ int main(int argc, char *argv[]){
         //this continues to be the SYSTEM MANAGER
 
 
-        print("before time");
-        
-        signal(SIGINT, terminate);
-    	signal (SIGTSTP,print_stats);
-    	sigemptyset(&block_sigint);
-    	sigaddset(&block_sigint, SIGINT);
-
-
-        //pthread_create(&thread_time, NULL, time_update, NULL);
-        while(1){
-        	time_update();
+        while(simulation_status()>=-2){
+        //not sure what to do here?
+        sleep(1);
         }
-       
         
         //idk what the main does after this?
-        //maybe replace thread time with this
 
-        wait(NULL);
+        
     }
+    
+     wait(NULL);
+     print("exit main");
     
 
     return 0;

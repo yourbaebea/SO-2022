@@ -5,8 +5,10 @@
 #include "main.h"
 
 
-void * cpu(int parameters[2]){
+void * cpu(void * args){
+    int * parameters=(int *) args;
     cpu_struct * cpu;
+    
     int id= parameters[0];
 
     server_struct* server;
@@ -121,8 +123,10 @@ task_struct * copy(task_struct * old){
 
 }
 
-void * read_unnamed_pipe(server_struct * server){
+void * read_unnamed_pipe(void * args){
+	server_struct * server = (server_struct *) args;
     task_struct * temp= (task_struct*) malloc(sizeof(task_struct));
+
 
     while(read(server->p[0],&temp,sizeof(task_struct)) > 0)
     {
@@ -200,7 +204,16 @@ void edge_server(int id) {
 
     while(simulation_status()>=0){
     
-        msgrcv(mqid, &msg, sizeof(msg_struct), id, 0);
+        if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){
+        	if(errno == EINTR){
+        		print("signal was detected in msgrcv");
+        		break;
+        	}
+        	else{
+        	print("some other error msgrcv");
+        	}
+        }
+        
         print("edge server, msgrcv");
 
         //stop all things
@@ -257,10 +270,11 @@ void edge_server(int id) {
         if(s==2){
             shm->count_dispacher++; //add to the count
         }
+        pthread_cond_broadcast(&shm->dispacher);
         pthread_mutex_unlock(&shm->dispacher_mutex);
-        pthread_cond_signal(&shm->dispacher);
-
     }
+    
+    print("out of msgrcv cycle, ending");
 
     //free(msg);
     //free(reply);
@@ -268,6 +282,7 @@ void edge_server(int id) {
 
 
     wait(NULL);
+    print("exit server");
     //keep the process alive untill the threads end
 
 }

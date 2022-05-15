@@ -66,6 +66,8 @@ void write_log(char * message, ...){
 
 // called by the signal or by the named pipe to end the simulation
 void terminate(){
+	print("C received");
+	signal(SIGINT, SIG_IGN);
 	//update shm status to ending, this should end all threads EXCEPT the time, monitor, task manager, etc etc
 	/* 
 	wait for it to end:
@@ -76,6 +78,13 @@ void terminate(){
 
 	
 	*/
+	pthread_mutex_lock(&shm->status_mutex);
+        shm->status=-1;
+    	pthread_mutex_unlock(&shm->status_mutex);
+    	
+    	sleep(10);
+    	
+    	exit(EXIT_FAILURE);
 	
 
 }
@@ -162,7 +171,7 @@ void end(int status){
 }
 
 //used in thread time for update
-void time_update() {
+void * time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
     //TODO this thread is still not working idk whats wrong
@@ -188,7 +197,7 @@ void time_update() {
 
     write_log("OFFLOAD SIMULATOR STARTING");
 
-    while (simulation_status() > 0) {
+    while (simulation_status() >=-1) {
     	print("time: %d", shm->time);
         pthread_mutex_lock(&shm->time_mutex);
         shm->time++;
@@ -196,9 +205,10 @@ void time_update() {
         sleep(1);
     }
     
-    print("\n\nHEREsimulation status is %d", shm->status);
+    print("time update is ending, status: %d", shm->status);
 
     pthread_exit(NULL);
+    return NULL;
 }
 
 

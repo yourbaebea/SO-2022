@@ -425,6 +425,8 @@ bool dispatch_task(){
 void task_manager() {
     //ignore signal
     write_log("PROCESS TASK_MANAGER CREATED");
+    
+    pthread_create(&thread_time, NULL, time_update, NULL);
 
     
     pthread_t thread_scheduler, thread_dispacher;

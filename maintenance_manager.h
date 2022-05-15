@@ -46,8 +46,10 @@ void maintenance_manager() {
    bool valid;
    msg_struct msg;
    
-   pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+   //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+   while(simulation_status()==0);
    print("after simulation started");
+   //print("after simulation started");
    
    
     while(simulation_status()>=0){
