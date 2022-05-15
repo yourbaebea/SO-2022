@@ -9,8 +9,8 @@ int generate(int min, int max){
 }
 
 
-void * read_msg_queue(void * args){
-    int value=*((int *) args);
+void * read_msg_queue(int value/*void * args*/){
+	//int value=*((int *) args);
     msg_struct reply;
     msg_struct msg;
 
@@ -47,7 +47,11 @@ void maintenance_manager() {
    bool valid;
    msg_struct msg;
    
-   pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+   //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+   while(simulation_status()==0);
+   print("after simulation started");
+   //print("after simulation started");
+   
    
     while(simulation_status()>=0){
     print("maintenance searching");
@@ -94,21 +98,7 @@ void maintenance_manager() {
     //free(current);
     //free(msg);
 
-    /*print("OUTSIDE MAINTENANCE");
-    
-    sleep(2);
-    if(pthread_cancel(thread_maintenance)){
-    	pthread_join(thread_maintenance,NULL);
-    }
-    else{
-    	printf("error exiting the thread maintenance");
-    }
-    
-    wait(NULL);
-    */
-    
     print("leaving maintenance");
-    return;
 
 }
 

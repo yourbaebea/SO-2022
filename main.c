@@ -158,8 +158,9 @@ void start(char * config_file){
 
     // Create Shared memory
     print("CREATE SHM");
+    int shmid, server_shmid, task_shmid;
    
-    shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT | 0600);
+    shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT | 0700);
     if (shmid < 0) {
         print("ERROR IN CREATE SHMID");
         end(EXIT_FAILURE);
@@ -171,6 +172,44 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     
+    //shm for servers
+    
+    /*
+    
+    server_shmid = shmget(IPC_PRIVATE, sizeof(server_struct) * config->edge_server_number, IPC_CREAT | 0700);
+    if (server_shmid < 0) {
+        print("ERROR IN CREATE SHMID");
+        end(EXIT_FAILURE);
+    }
+
+    shm->server = (server_struct*) shmat(server_shmid, NULL, 0);
+    if (shm->server == (server_struct*)-1) {
+        print("ERROR IN CREATE SHM");
+        end(EXIT_FAILURE);
+    }
+    
+    */
+    
+
+    
+    
+    //shm for tasks!
+    
+    /*
+    
+    task_shmid = shmget(IPC_PRIVATE, sizeof(task_struct) * config->queue_pos, IPC_CREAT | 0700);
+    if (shmid < 0) {
+        print("ERROR IN CREATE SHMID");
+        end(EXIT_FAILURE);
+    }
+    
+    shm->tasklist
+
+    shm->tasklist = shmat(task_shmid, NULL, 0);
+    shm->tasklist->next=NULL;
+    
+    
+    */
     
     if(init_mutex()==false){
     	print("ERROR IN CREATE MUTEXES");
@@ -252,6 +291,9 @@ void start(char * config_file){
     shm->count_dispacher=0;
     
     //print("AFTER MUTEX");
+    //tasklist
+    //shm->tasklist= (task_struct *) malloc(sizeof(task_struct));
+    
     
     //STATS
     shm->stats= (stats_struct *) malloc(sizeof(stats_struct));

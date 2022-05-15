@@ -73,6 +73,7 @@ typedef struct{
 } config_struct;
 
 
+
 // Task struct
 typedef struct task_struct_aux task_struct_next;
 typedef struct task_struct_aux{
@@ -88,6 +89,18 @@ typedef struct task_struct_aux{
     task_struct_next * next;
 
 }task_struct;
+
+// Task struct
+typedef struct tasklist_struct_aux tasklist_struct_next;
+typedef struct tasklist_struct_aux{
+    pthread_mutex_t mutex;
+    int count;
+    int queue_max;
+    task_struct_next * first;
+
+}tasklist_struct;
+
+
 
 
 
@@ -145,6 +158,9 @@ typedef struct{
     stats_struct * stats;
     //servers array data pointer
     server_struct * server;
+    
+    //task_struct * tasklist;
+    //add var to check current num de tasks
 
     pthread_mutex_t status_mutex, simulationstarted_mutex; //for both status!!!!
     pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex;
@@ -164,11 +180,11 @@ bool debug=false;
 FILE* log_file;                 // Log file pointer
 shm_struct * shm;
 config_struct * config;
-task_struct * tasklist;
+tasklist_struct * tasklist;
 
 //TODO
 int mqid;
-int shmid;
+//int shmid;
 shm_struct * shm;                // Shared memory shm_struct struct
 config_struct * config;          // Config struct
 
@@ -198,9 +214,8 @@ void * time_update();
 int current_time();
 
 //task manager
-void print_list();
 bool new_task(char * buffer);
-void insert_task_list(task_struct * task);
+void insert_task_list();
 void remove_task(task_struct * before, bool success);
 bool write_unnamed_pipe(task_struct * current);
 void read_task_pipe();
@@ -211,9 +226,7 @@ void task_manager();
 
 //edge server
 void * cpu(void * args);
-task_struct * copy(task_struct * old);
-void read_unnamed_pipe(server_struct * server);
-void * receive_msg(void * args);
+void * read_unnamed_pipe(void * args);
 void edge_server(int id);
 
 //maintenance manager
@@ -221,10 +234,8 @@ void edge_server(int id);
 int generate(int min, int max);
 bool check(server_struct * s);
 void maintenance_manager();
-void * read_msg_queue(void * args);
 
 //monitor
-bool check_change(int current);
 void monitor();
 
 
