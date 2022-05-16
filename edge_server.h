@@ -81,6 +81,8 @@ void * cpu(void * args){
 
         pthread_mutex_unlock(&cpu->task_available_mutex);
 
+
+	print("cpu doing task");
         sleep(cpu->task->instructions / cpu->mips);
         
         
@@ -129,10 +131,11 @@ task_struct * copy(task_struct * old){
 void * read_unnamed_pipe(void * args){
 	server_struct * server = (server_struct *) args;
     task_struct * temp= (task_struct*) malloc(sizeof(task_struct));
-
-
-    while(read(server->p[0],&temp,sizeof(task_struct)) > 0)
+    
+    while(read(server->p[0],temp,sizeof(task_struct)) > 0)
     {
+    	print("pipe reading");
+    	
         print("UNNAMED PIPE NEW TASK: %d\n", temp->id);
         
         pthread_mutex_lock(&server->server_mutex);
@@ -141,6 +144,8 @@ void * read_unnamed_pipe(void * args){
 
             //do i need this?
             //pthread_mutex_lock(&server->cpu1->task_available_mutex);
+            print("pipe inside cond signal task available");
+            
             pthread_cond_signal(&server->cpu1->task_available);
             //pthread_mutex_unlock(&server->cpu1->task_available_mutex);
             

@@ -118,6 +118,7 @@ void monitor() {
 
     while(simulation_status()>=0){
     	print("monitor");
+    	sleep(3);
         /*
         pthread_mutex_lock(&shm->status_mutex);
 		server_performance=shm->server_status;

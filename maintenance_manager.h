@@ -5,7 +5,8 @@
 
 int generate(int min, int max){
     srand(time(NULL));
-    return ( (rand() % (max+1-min))+ min);
+    int r= ( (rand() % (max+1-min))+ min);
+    return r;
 }
 
 
@@ -59,7 +60,7 @@ void maintenance_manager() {
         count=0;
         valid=true;
         maintenance=generate(0, config->edge_server_number-1);
-        print("maintenance is %d, should be 0,1 or 2");
+        //print("maintenance is %d, should be 0,1 or 2 config: %d", maintenance, config->edge_server_number);
 
         temp=shm->server;
         for(i=0; i< config->edge_server_number; i++){

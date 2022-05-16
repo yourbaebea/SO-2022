@@ -126,19 +126,14 @@ void insert_task_list(task_struct * task){
     shm->stats->tasks_total++;
     pthread_mutex_unlock(&shm->stats_mutex);
 
-    print("insert in tasklist");
-
-    //sem_wait(&sem_tasks);
-    insert_shm(task);
-    //print_list_shm();
-    //sem_post(&sem_tasks);
-    
-    print("after in tasklist");
-    
-    //pthread_mutex_lock(&shm->scheduler_mutex);
+    pthread_mutex_lock(&shm->scheduler_mutex);
+    print("inserting new task in list");
+    insert_shm(task);    
     pthread_cond_broadcast(&shm->scheduler);
     print("broadcasting cond var scheduler");
-    //pthread_mutex_unlock(&shm->scheduler_mutex);
+    pthread_mutex_unlock(&shm->scheduler_mutex);
+    
+    print_list_shm();
 }
 
 void remove_task(task_struct * t, bool success){
@@ -259,8 +254,9 @@ void * scheduler(){
         
         //pthread_mutex_lock(&shm->scheduler_mutex);
         print("waiting cond var scheduler");
-        pthread_cond_wait(&shm->scheduler,&shm->scheduler_mutex);
         pthread_mutex_lock(&shm->scheduler_mutex);
+        pthread_cond_wait(&shm->scheduler,&shm->scheduler_mutex);
+
         print("cond var scheduler wait done!");
         
         print_list_shm();
@@ -319,7 +315,7 @@ void * dispacher(){
         pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
         print("cond var dispacher wait done!");
         count_dispacher=shm->count_dispacher;
-        print("INSIDE DISPACHER, COUNT %d", count_dispacher);
+        print("after cond var wait dispacher, COUNT %d", count_dispacher);
         pthread_mutex_unlock(&shm->dispacher_mutex);
 
         if(simulation_status()<0){
@@ -366,9 +362,10 @@ void * dispacher(){
                         pthread_mutex_unlock(&shm->dispacher_mutex);
 
             if(check==false){
+            print("empty list, sleeping for 3 secs");
                 //there is no value in list so just sleep for a bit
                 //this should be a scheduler wait
-                sleep(1);
+                sleep(3);
                 /*
                 pthread_mutex_lock(&shm->scheduler_mutex);
                 print("waiting cond var scheduler");

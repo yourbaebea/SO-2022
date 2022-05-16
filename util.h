@@ -94,14 +94,15 @@ void print_stats(){
 	char stats[10000];
 	
 	strcpy(stats, "\tSTATISTICS\n");
-	/*
+	
 	char buffer[BUF_SIZE];
 	pthread_mutex_lock(&shm->stats_mutex); // not sure if its absolutely needed here
-
-
-	float wait_time= shm->stats.total_time_response/shm->stats.tasks_done;
+	float wait_time=0;
+	if(shm->stats->tasks_done!=0){
+		wait_time= shm->stats->total_time_response/shm->stats->tasks_done;
+	}
 	
-	sprintf(buffer, "\t\ttotal tasks: %d\n\t\tdone tasks: %d\n\t\trefused tasks: %d\n\t\taverage wait time: %.2f\n \nServer\t\tTasks\t\tMaintenance\n", shm->stats.tasks_total, shm->stats.tasks_done, shm->stats.tasks_refused, wait_time);
+	sprintf(buffer, "\t\ttotal tasks: %d\n\t\tdone tasks: %d\n\t\trefused tasks: %d\n\t\taverage wait time: %.2f\n \nServer\t\tTasks\t\tMaintenance\n", shm->stats->tasks_total, shm->stats->tasks_done, shm->stats->tasks_refused, wait_time);
 	strcat(stats, buffer);
 	
 	
@@ -114,12 +115,10 @@ void print_stats(){
 		strcat(stats,buffer);
 		temp=temp->next;
 	}
-	free(temp);
+	//free(temp);
 	
 	pthread_mutex_unlock(&shm->stats_mutex);
 	
-
-	*/
 	
 	strcat(stats, "----------------------------------\n");
 	
