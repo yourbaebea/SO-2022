@@ -99,6 +99,7 @@ bool check_change(int current){
 
 //TODO
 void monitor() {
+	if(simulation_status()<0) return;
     //ignore signal
     signal(SIGINT, SIG_IGN);
     signal(SIGTSTP, SIG_IGN);
@@ -117,14 +118,14 @@ void monitor() {
     print("after simulation started");
 
     while(simulation_status()>=0){
-    	print("monitor");
-    	sleep(3);
-        /*
+    	//print("monitor");
+    	
         pthread_mutex_lock(&shm->status_mutex);
 		server_performance=shm->server_status;
     	pthread_mutex_unlock(&shm->status_mutex);
     	
     	if(check_change(server_performance)==true){
+    		print("monitor: changing status");
     		pthread_mutex_lock(&shm->status_mutex);
             if(shm->server_status==1) shm->server_status=2;
             if(shm->server_status==2) shm->server_status=1;
@@ -140,9 +141,18 @@ void monitor() {
                 server=server->next;
             }	
         }
-        */
+        else{
+            //print("monitor: no changes");
+        }
+        
+        sleep(1);
 
     }
+    
+    print("monitor: exit");
+    exit(EXIT_SUCCESS);
+    
+    
 
 }
 

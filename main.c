@@ -406,7 +406,7 @@ int main(int argc, char *argv[]){
 		    }
 		    else {
 		       
-			print("SYSTEM MANAGER AFTER FORKS");
+			//print("SYSTEM MANAGER AFTER FORKS");
 			//this continues to be the SYSTEM MANAGER
 
 
@@ -417,13 +417,12 @@ int main(int argc, char *argv[]){
 			
 			//idk what the main does after this?
 
-			
+     			print("main: exit");
 		    }
 	    }
     }
     
-     wait(NULL);
-     print("exit main");
+    wait(NULL);
     
 
     return 0;

@@ -195,7 +195,7 @@ bool write_unnamed_pipe(task_struct * current){
 void read_task_pipe(){
 
     
-    print("task manager started reading from pipe");
+    //print("task manager started reading from pipe");
 
     int fd;
     char buffer[BUF_SIZE];
@@ -298,7 +298,7 @@ void * scheduler(){
 void * dispatcher(){
     //shm_struct * shm = (shm_struct *) args;
     
-    print("THREAD dispatchER CREATED");
+    print("THREAD DISPATCHER CREATED");
     int i, count, count_dispatcher;
     bool check;
     task_struct *t;
@@ -396,6 +396,7 @@ void * dispatcher(){
 
 //TODO
 void task_manager() {
+    if(simulation_status()<0) return;
     //ignore signal
     write_log("PROCESS TASK_MANAGER CREATED");
     int i,index=-1;
@@ -433,16 +434,21 @@ void task_manager() {
     //j=0;
     for(i=0; i< config->edge_server_number; i++){
         if(fork()){
-        	print("--- server %d of %d", i,config->edge_server_number);
+        	//print("--- server %d of %d", i,config->edge_server_number);
             edge_server(i);
         }
     }
     
   
     read_task_pipe();
-	
-
+    /*
+    pthread_join(thread_scheduler,NULL);
+    pthread_join(thread_dispatcher,NULL);
+    pthread_join(thread_time,NULL);
+    */
     wait(NULL);
+    print("task manager:exit");
+    exit(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }

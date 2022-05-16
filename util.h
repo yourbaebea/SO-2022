@@ -81,10 +81,10 @@ void terminate(){
 	pthread_mutex_lock(&shm->status_mutex);
         shm->status=-1;
     	pthread_mutex_unlock(&shm->status_mutex);
+    	print("ending...");
+    	//sleep(10);
     	
-    	sleep(10);
-    	
-    	exit(EXIT_FAILURE);
+    	exit(EXIT_SUCCESS);
 	
 
 }
@@ -176,20 +176,23 @@ void * time_update() {
     //TODO this thread is still not working idk whats wrong
     int a=0, b=0,c=0;
     while(simulation_status()==0){
-    	print("current count=%d", shm->count_init);
     	b=shm->count_init;
     	if(b!=a) a=b;
-    	if(b==a) c++;
+    	if(b==a){
+    		print("init count= %d", shm->count_init);
+    		c++;
+    	}
     	pthread_mutex_lock(&shm->simulationstarted_mutex);
     	if(shm->count_init>=(config->edge_server_number*3)){
     		shm->status=1;
     		shm->server_status=1;
     		pthread_mutex_lock(&shm->time_mutex);
-		    print("thread updating time started");
+		    //print("thread updating time started");
 		    shm->time=0;
 		    pthread_mutex_unlock(&shm->time_mutex);
+		    write_log("OFFLOAD SIMULATOR STARTING");
 		    pthread_cond_broadcast(&shm->simulationstarted);
-    		print("status broadcasted");	
+    		    //print("status broadcasted");	
     		   
     	}
     	if(c==3){
@@ -204,7 +207,7 @@ void * time_update() {
     }
       
 
-    write_log("OFFLOAD SIMULATOR STARTING");
+   // write_log("OFFLOAD SIMULATOR STARTING");
 
     while (simulation_status() >=-1) {
     	print("time: %d", shm->time);

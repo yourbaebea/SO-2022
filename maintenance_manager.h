@@ -17,9 +17,14 @@ void * read_msg_queue(int value/*void * args*/){
 
     while(simulation_status()>=0){
     
-        if(msgrcv(mqid,&reply,sizeof(msg_struct)- sizeof(long),value, 0))
+        if(msgrcv(mqid,&reply,sizeof(msg_struct)- sizeof(long),value, IPC_NOWAIT)==-1)
         {
-            print("error while reading msg idk do we end?");
+            /*
+            if(errno==ENOMSG){
+            	print("msg queue is empty");
+            	}
+            else print("error msgrcv maintenance: %s", strerror(errno));
+        	*/
         }
         else{
             //response to server
@@ -34,6 +39,7 @@ void * read_msg_queue(int value/*void * args*/){
 
 //TODO
 void maintenance_manager() {
+	if(simulation_status()<0) return;
     //ignore signal
     signal(SIGINT, SIG_IGN);
     signal(SIGTSTP, SIG_IGN);
@@ -55,7 +61,7 @@ void maintenance_manager() {
    
    
     while(simulation_status()>=0){
-    print("maintenance searching");
+    //print("maintenance searching");
     //if its ending dont do maintenance
         count=0;
         valid=true;
@@ -83,13 +89,13 @@ void maintenance_manager() {
         
                    
         if(valid==true){
-        	print("maintenance is valid we are sending a msg");
+            //print("maintenance:valid, we are sending a msg");
             maintenance_time=generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
             msg = (msg_struct) {(long) maintenance, maintenance_time};
             msgsnd(mqid, &msg, sizeof(msg_struct), 0);
         }
         else{
-            print("maintenance tried server %d, couldnt", maintenance);
+            //print("maintenance: tried server %d, couldnt", maintenance);
         }
 
         maintenance_time= generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
@@ -99,8 +105,10 @@ void maintenance_manager() {
     
     //free(current);
     //free(msg);
-
-    print("leaving maintenance");
+    pthread_join(thread_maintenance,NULL);
+    wait(NULL);
+    print("maintenance: exit");
+    exit(EXIT_SUCCESS);
 
 }
 

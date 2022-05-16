@@ -62,53 +62,67 @@ void * cpu(void * args){
       
     while(simulation_status()>=0){
     	
-    	print("inside cpu, inside simulation");
+    	//print("inside cpu, inside simulation");
 
         //its fine if inside its -1 bc its supossed to make it still run, the next time is not gonna enter
-
+	pthread_mutex_lock(&cpu->task_available_mutex);
         pthread_cond_wait(&cpu->task_available,&cpu->task_available_mutex);
-        pthread_mutex_lock(&cpu->task_available_mutex);
-        //waiting for a new task to be processed;
-
-        pthread_mutex_lock(&server->server_mutex);
-        cpu->busy=true;
-        pthread_mutex_unlock(&server->server_mutex);
-
-        //TODO stuff here
-        cpu->task->time_acceptance= current_time();
-        cpu->task->time_needed= cpu->task->instructions / cpu->mips;
-        cpu->task->time_waiting= current_time()- cpu->task->time_start;
-
         pthread_mutex_unlock(&cpu->task_available_mutex);
-
-
-	print("cpu doing task");
-        sleep(cpu->task->instructions / cpu->mips);
         
+        print("task available wait done!");
+        //pthread_mutex_lock(&cpu->task_available_mutex);
+        //waiting for a new task to be processed;
         
-        //add to stats AFTER BEING DONE
-        pthread_mutex_lock(&shm->stats_mutex);
-        shm->stats->tasks_done++;
-        shm->stats->total_time_response+=cpu->task->time_waiting;
-        shm->stats->tasks_by_server[id]++;
-        pthread_mutex_unlock(&shm->stats_mutex);
-        cpu->task=NULL;
-
-
-        pthread_mutex_lock(&server->server_mutex);
-        cpu->busy=false;
-        
-        if(server->stopped==false){
-		pthread_mutex_lock(&shm->dispatcher_mutex);
-		shm->count_dispatcher++; //add to the count
-		pthread_mutex_unlock(&shm->dispatcher_mutex);
-		pthread_cond_broadcast(&shm->dispatcher);
+        if(cpu->task==NULL){
+        	print("task available but task is null, something went wrong");
+        	
         }
         else{
-        	cpu->active=false;
+		write_log("SERVER %s, CPU %d: NEW TASK (%d)", server->name, parameters[1],cpu->task->id );
+		pthread_mutex_lock(&server->server_mutex);
+		cpu->busy=true;
+		pthread_mutex_unlock(&server->server_mutex);
+
+		//TODO stuff here
+		cpu->task->time_acceptance= current_time();
+		cpu->task->time_needed= cpu->task->instructions / cpu->mips;
+		cpu->task->time_waiting= current_time()- cpu->task->time_start;
+
+		pthread_mutex_unlock(&cpu->task_available_mutex);
+
+
+		print("cpu doing task for %d", cpu->task->instructions / cpu->mips);
+		sleep(cpu->task->instructions / cpu->mips);
+		
+		
+		//add to stats AFTER BEING DONE
+		pthread_mutex_lock(&shm->stats_mutex);
+		shm->stats->tasks_done++;
+		shm->stats->total_time_response+=cpu->task->time_waiting;
+		shm->stats->tasks_by_server[id]++;
+		pthread_mutex_unlock(&shm->stats_mutex);
+		cpu->task=NULL;
+
+
+		pthread_mutex_lock(&server->server_mutex);
+		cpu->busy=false;
+		
+		if(server->stopped==false){
+			pthread_mutex_lock(&shm->dispatcher_mutex);
+			shm->count_dispatcher++; //add to the count
+			pthread_cond_broadcast(&shm->dispatcher);
+			pthread_mutex_unlock(&shm->dispatcher_mutex);
+		}
+		else{
+			cpu->active=false;
+		}
+		
+		pthread_mutex_unlock(&server->server_mutex);
         }
         
-        pthread_mutex_unlock(&server->server_mutex);
+        write_log("SERVER %s, CPU %d: FREE", server->name, parameters[1]);
+        
+        
 
     }
 
@@ -143,11 +157,11 @@ void * read_unnamed_pipe(void * args){
             server->cpu1->task= copy(temp);
 
             //do i need this?
-            //pthread_mutex_lock(&server->cpu1->task_available_mutex);
+            pthread_mutex_lock(&server->cpu1->task_available_mutex);
             print("pipe inside cond signal task available");
             
-            pthread_cond_signal(&server->cpu1->task_available);
-            //pthread_mutex_unlock(&server->cpu1->task_available_mutex);
+            pthread_cond_broadcast(&server->cpu1->task_available);
+            pthread_mutex_unlock(&server->cpu1->task_available_mutex);
             
         }
 
@@ -163,12 +177,13 @@ void * read_unnamed_pipe(void * args){
 
 //TODO
 void edge_server(int id) {
+    if(simulation_status()<0) return;
     //ignore signal
     signal(SIGINT, SIG_IGN);
     signal(SIGTSTP, SIG_IGN);
 
     write_log("PROCESS EDGE SERVER CREATED");
-    print("edge server %d", id);
+    //print("edge server %d", id);
 
     //inform Maintenance Manager by mq????
 
@@ -181,7 +196,7 @@ void edge_server(int id) {
         server = server->next;
     }
 
-    print("creating threads of cpus");
+    //print("creating threads of cpus");
 
     int parameters[2];
     parameters[0]=id;
@@ -194,7 +209,7 @@ void edge_server(int id) {
     parameters2[1]=2;
     pthread_create(&thread_cpu2, NULL, cpu,(void *) parameters2);
 
-    print("creating thread to read unnamed pipe");
+    //print("creating thread to read unnamed pipe");
     pthread_create(&thread_read_pipe, NULL, read_unnamed_pipe,(void *) server);
 
 
@@ -204,23 +219,30 @@ void edge_server(int id) {
     
     pthread_mutex_lock(&shm->simulationstarted_mutex);
     	shm->count_init++;
-    	print("count init current=%d", shm->count_init);	
+    	//print("server: count init %d", shm->count_init);	
     pthread_mutex_unlock(&shm->simulationstarted_mutex);
     
     //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
-    print("%d after simulation started",  id);
-    while(simulation_status()>=0);
+    
+    
+    
+    while(simulation_status()==0);
+    write_log("SERVER %s READY", server->name);
+    
+    print("server %d: reading msgs",  id);
     while(simulation_status()>=0){
     
         if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){
+        	/*
         	if(errno == EINTR){
         		print("signal was detected in msgrcv");
         		break;
         	}
         	else{
         	print("some other error msgrcv");
-        	}
+        	}*/
         }
+        else{
         
         print("edge server, msgrcv");
 
@@ -280,17 +302,24 @@ void edge_server(int id) {
         }
         pthread_cond_broadcast(&shm->dispatcher);
         pthread_mutex_unlock(&shm->dispatcher_mutex);
+        }
     }
     
-    print("out of msgrcv cycle, ending");
+    //print("server: out of msgrcv cycle, ending");
 
     //free(msg);
     //free(reply);
     //free(confirmation);
-
+    
+    /*
+    pthread_join(thread_cpu1,NULL);
+    pthread_join(thread_cpu2,NULL);
+    pthread_join(thread_read_pipe,NULL);
+    */
 
     wait(NULL);
-    print("exit server");
+    print("server: exit");
+    exit(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }
