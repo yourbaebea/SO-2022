@@ -13,11 +13,10 @@ void * cpu(void * args){
 
     server_struct* server;
     server= shm->server;
-    for(int i=1; i<id; i++){
+    for(int i=0; i<id; i++){
         server = server->next;
     }
-
-	//print("%d inside cpu[%d], before server_mutex", id, parameters[1]);
+    
     //pthread_mutex_lock(&server->server_mutex);
     if(parameters[1]==1){
         cpu= server->cpu1;
@@ -30,10 +29,6 @@ void * cpu(void * args){
         cpu->busy=false;
     }
     //pthread_mutex_unlock(&server->server_mutex);
-    //print("%d inside cpu[%d], after server_mutex", id, parameters[1]);
-
-    
-    //print("inside cpu after params");
     
     pthread_mutex_lock(&shm->simulationstarted_mutex);
     	shm->count_init++;
@@ -45,6 +40,8 @@ void * cpu(void * args){
    
    while(simulation_status()==0);
    //print("after simulation started");
+   
+   print("SERVER %s, CPU %d", server->name, parameters[1]);
 
     pthread_mutex_lock(&server->server_mutex); 
     bool check=cpu->active;
@@ -78,7 +75,7 @@ void * cpu(void * args){
         	
         }
         else{
-		write_log("SERVER %s, CPU %d: NEW TASK (%d)", server->name, parameters[1],cpu->task->id );
+		print("SERVER %s, CPU %d: NEW TASK %d", server->name, parameters[1],cpu->task->id );
 		pthread_mutex_lock(&server->server_mutex);
 		cpu->busy=true;
 		pthread_mutex_unlock(&server->server_mutex);
@@ -91,8 +88,8 @@ void * cpu(void * args){
 		pthread_mutex_unlock(&cpu->task_available_mutex);
 
 
-		print("cpu doing task for %d", cpu->task->instructions / cpu->mips);
-		sleep(cpu->task->instructions / cpu->mips);
+		print("cpu doing task for %.2f", cpu->task->instructions /(float) cpu->mips);
+		sleep(cpu->task->instructions / (float) cpu->mips);
 		
 		
 		//add to stats AFTER BEING DONE
@@ -101,8 +98,10 @@ void * cpu(void * args){
 		shm->stats->total_time_response+=cpu->task->time_waiting;
 		shm->stats->tasks_by_server[id]++;
 		pthread_mutex_unlock(&shm->stats_mutex);
+		
+		
+		write_log("SERVER %s, CPU %d: TASK %d DONE, CPU IS FREE", server->name, parameters[1], cpu->task->id);
 		cpu->task=NULL;
-
 
 		pthread_mutex_lock(&server->server_mutex);
 		cpu->busy=false;
@@ -120,7 +119,7 @@ void * cpu(void * args){
 		pthread_mutex_unlock(&server->server_mutex);
         }
         
-        write_log("SERVER %s, CPU %d: FREE", server->name, parameters[1]);
+        
         
         
 
@@ -192,9 +191,11 @@ void edge_server(int id) {
     server_struct* server; //= (server_struct*) malloc(sizeof(server_struct*));
     //its just a pointer we dont need to alloc memory
     server= shm->server;
-    for(int i=1; i<id; i++){
+    for(int i=0; i<id; i++){
         server = server->next;
     }
+    
+    print("HERE in edge %s", server->name);
 
     //print("creating threads of cpus");
 
@@ -229,7 +230,7 @@ void edge_server(int id) {
     while(simulation_status()==0);
     write_log("SERVER %s READY", server->name);
     
-    print("server %d: reading msgs",  id);
+    print("server %d OR %d: reading msgs",  server->id, id);
     while(simulation_status()>=0){
     
         if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){
@@ -317,9 +318,7 @@ void edge_server(int id) {
     pthread_join(thread_read_pipe,NULL);
     */
 
-    wait(NULL);
     print("server: exit");
-    exit(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }

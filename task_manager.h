@@ -162,11 +162,12 @@ bool write_unnamed_pipe(task_struct * current){
         else{
             temp = temp->next;
         }
-	    print("task manager bf server mutex");
+	    //print("task manager bf server mutex");
         pthread_mutex_lock(&temp->server_mutex);
         if(!temp->stopped){
         if( (!temp->cpu1->busy && temp->cpu1->active) || (!temp->cpu2->busy && temp->cpu2->active)){
             write(temp->p[1], current, sizeof(task_struct));
+            write_log("DISPATCHER: TASK %d SELECTED FOR EXECUTION ON %s", current->id,temp->name );
             /*
             struct dirent data;
             close(fileStatusPipe[1]);
@@ -178,12 +179,12 @@ bool write_unnamed_pipe(task_struct * current){
             exit(0);
             */
            pthread_mutex_unlock(&temp->server_mutex);
-           print("task manager af server mutex");
+           //print("task manager af server mutex");
            return true;
         }
         }
         pthread_mutex_unlock(&temp->server_mutex);
-        print("task manager af server mutex");
+        //print("task manager af server mutex");
 
 
     }
@@ -315,7 +316,7 @@ void * dispatcher(){
         pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
         print("cond var dispatcher wait done!");
         count_dispatcher=shm->count_dispatcher;
-        print("after cond var wait dispatcher, COUNT %d", count_dispatcher);
+        print("dispatch count= %d", count_dispatcher);
         pthread_mutex_unlock(&shm->dispatcher_mutex);
 
         if(simulation_status()<0){
@@ -332,7 +333,7 @@ void * dispatcher(){
             
             pthread_mutex_lock(&shm->dispatcher_mutex);
             count_dispatcher=shm->count_dispatcher;
-            print("INSIDE dispatchER, COUNT %d", count_dispatcher);
+            print("dispatch count= %d", count_dispatcher);
 
             
             for(i=0;i<config->queue_pos; i++){
@@ -362,7 +363,9 @@ void * dispatcher(){
                         pthread_mutex_unlock(&shm->dispatcher_mutex);
 
             if(check==false){
-            print("empty list, sleeping for 3 secs");
+            	pthread_mutex_lock(&shm->dispatcher_mutex);
+                print(" dispatch: empty list, dispatch count= %d (sleeping for 3 secs)", count_dispatcher);
+                pthread_mutex_unlock(&shm->dispatcher_mutex);
                 //there is no value in list so just sleep for a bit
                 //this should be a scheduler wait
                 sleep(3);
@@ -401,28 +404,6 @@ void task_manager() {
     write_log("PROCESS TASK_MANAGER CREATED");
     int i,index=-1;
     
-    //shm->tasklist.id
-    
-    /*
-    pthread_mutex_lock(&shm->tasklist_mutex);
-    int i,index=-1;
-    
-    
-    for(i=0; i< config->queue_pos;i++){
-    	shm->tasklist[i].id=0;
-    	shm->tasklist[i].priority=-1;
-    }
-    pthread_mutex_unlock(&shm->tasklist_mutex);
-    */
-    
-    
-    //shm->tasklist=NULL;
-    //print_task(shm->tasklist);
-    
-    //remove_task(NULL,false);
-    
-    //print("config nr: %d",config->edge_server_number);
-    
     pthread_create(&thread_time, NULL, time_update, NULL);
 
     
@@ -434,7 +415,7 @@ void task_manager() {
     //j=0;
     for(i=0; i< config->edge_server_number; i++){
         if(fork()){
-        	//print("--- server %d of %d", i,config->edge_server_number);
+            print("--- server %d of %d", i,config->edge_server_number);
             edge_server(i);
         }
     }
@@ -446,9 +427,8 @@ void task_manager() {
     pthread_join(thread_dispatcher,NULL);
     pthread_join(thread_time,NULL);
     */
-    wait(NULL);
+    while(wait(NULL)>0);
     print("task manager:exit");
-    exit(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }

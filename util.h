@@ -40,25 +40,29 @@ void print(char * message, ...){
 //write info in log and terminal at the same time
 void write_log(char * message, ...){
     char buffer[BUF_SIZE];
+    //memset(buffer, 0, strlen(buffer));
     va_list args2;
     va_start(args2,message);
     vsprintf(buffer, message,args2);
-    va_end(args2);
-
-	char timeformat [80];
+    char timeformat [80];
     time_t rawtime;
     struct tm* timeinfo;
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    strftime(timeformat, 80,"[%I:%M:%S]",timeinfo);
+    strftime(timeformat, 80,"[%I:%M:%S] ",timeinfo);
     
     pthread_mutex_lock(&shm->log_mutex);
-
+    
     fprintf(log_file, "%s %s \n", timeformat, buffer);
     fflush(log_file);
     
+    va_start(args2, message);
     // write in the terminal
-    printf("%s %s\n",timeformat,message);
+    printf("%s ",timeformat);
+    vprintf(message,args2);
+    printf("\n");
+    fflush(stdout);
+    va_end(args2);
 
     pthread_mutex_unlock(&shm->log_mutex);
 
@@ -66,7 +70,7 @@ void write_log(char * message, ...){
 
 // called by the signal or by the named pipe to end the simulation
 void terminate(){
-	print("C received");
+	write_log("SIMULATION ENDING...");
 	signal(SIGINT, SIG_IGN);
 	//update shm status to ending, this should end all threads EXCEPT the time, monitor, task manager, etc etc
 	/* 
@@ -83,8 +87,7 @@ void terminate(){
     	pthread_mutex_unlock(&shm->status_mutex);
     	print("ending...");
     	//sleep(10);
-    	
-    	exit(EXIT_SUCCESS);
+    	//exit(EXIT_SUCCESS);
 	
 
 }
@@ -128,7 +131,7 @@ void print_stats(){
 //delete all and end
 void end(int status){
 	int i;
-    print("ENDING THE SIMULATION.......");
+    write_log("CLEARING MEMORY TO END SIMULATION");
     
     //tasks -> delete all tasks on linked list, doesnot need to update stats
     //TODO

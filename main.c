@@ -230,6 +230,7 @@ void start(char * config_file){
     if(pthread_mutexattr_init(&attrmutex)!=0) end(EXIT_FAILURE);
     pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
     
+    paux= config->server_info;
     for(i=0; i<config->edge_server_number; i++){
     	server_struct * temp= (server_struct *) malloc(sizeof(server_struct));
     	
@@ -259,6 +260,10 @@ void start(char * config_file){
         temp->tasks_done=0;
         temp->stopped=false;
         temp->active_cpus=1;
+        
+        temp->name=paux->name;
+        temp->cpu1->mips= paux->cpu1;
+        temp->cpu2->mips= paux->cpu2;
 
         
         if (pipe(temp->p) == -1) {
@@ -269,17 +274,14 @@ void start(char * config_file){
         if(i==0){
             shm->server = temp;
             p  = shm->server;
-            paux= config->server_info;        
+            paux=paux->next;       
         }
         else{
             p->next = temp;
             p = p->next;
             paux=paux->next;
         }
-        temp->name=paux->name;
-        temp->cpu1->mips= paux->cpu1;
-        temp->cpu2->mips= paux->cpu2;
-        print("server in shm %s", temp->name);        
+        print("server id %d in shm %s",temp->id, temp->name);        
     }
     
     
@@ -422,7 +424,8 @@ int main(int argc, char *argv[]){
 	    }
     }
     
-    wait(NULL);
+    while(wait(NULL)>0);
+    end(EXIT_SUCCESS);
     
 
     return 0;
