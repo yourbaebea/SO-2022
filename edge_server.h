@@ -45,18 +45,19 @@ void * cpu(void * args){
    
    while(simulation_status()==0);
    //print("after simulation started");
-   
-pthread_mutex_lock(&server->server_mutex); 
-if(cpu->active==true){
-pthread_mutex_lock(&shm->dispacher_mutex);
-shm->count_dispacher++; //add to the count
-print("count dispacher is currently %d", shm->count_dispacher);
-pthread_mutex_unlock(&shm->dispacher_mutex);
-pthread_cond_signal(&shm->dispacher);
-print("dispacher cond broadcasted");
-}
-pthread_mutex_unlock(&server->server_mutex);	
-    
+
+    pthread_mutex_lock(&server->server_mutex); 
+    bool check=cpu->active;
+    pthread_mutex_unlock(&server->server_mutex); 
+
+    if(check==true){
+    	pthread_mutex_lock(&shm->dispacher_mutex);
+        shm->count_dispacher++; //add to the count
+        print("count dispacher is currently %d", shm->count_dispacher);
+        pthread_cond_broadcast(&shm->dispacher);
+        print("dispacher cond broadcasted");
+        pthread_mutex_unlock(&shm->dispacher_mutex);
+    }
    //free(parameters);
       
     while(simulation_status()>=0){
@@ -201,9 +202,9 @@ void edge_server(int id) {
     	print("count init current=%d", shm->count_init);	
     pthread_mutex_unlock(&shm->simulationstarted_mutex);
     
-    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+    //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
     print("%d after simulation started",  id);
-
+    while(simulation_status()>=0);
     while(simulation_status()>=0){
     
         if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){

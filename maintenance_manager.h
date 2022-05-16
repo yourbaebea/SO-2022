@@ -5,7 +5,7 @@
 
 int generate(int min, int max){
     srand(time(NULL));
-    return (rand() % max)+ min;
+    return ( (rand() % (max+1-min))+ min);
 }
 
 
@@ -59,20 +59,20 @@ void maintenance_manager() {
         count=0;
         valid=true;
         maintenance=generate(0, config->edge_server_number-1);
-        for(i=0; i< config->edge_server_number; i++){
-            if(i==0){
-                temp=shm->server;
-            }
-            else{
-                temp = temp->next;
-            }
+        print("maintenance is %d, should be 0,1 or 2");
 
+        temp=shm->server;
+        for(i=0; i< config->edge_server_number; i++){
+            
             pthread_mutex_lock(&temp->server_mutex);
-            if(temp->stopped==true) count++;
+            if(temp->stopped==true){
+                count++;
+                if(i==maintenance) valid=false;
+                //when we are trying to do maintenance on an already on maintenance server
+            }
             pthread_mutex_unlock(&temp->server_mutex);
 
-            if(i==maintenance) valid=false; //when we are trying to do maintenance on an already on maintenance server
-
+            temp = temp->next;
 
         }
 
@@ -90,8 +90,9 @@ void maintenance_manager() {
         else{
             print("maintenance tried server %d, couldnt", maintenance);
         }
- 
-        sleep(generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM)*1); //interval between maintenance
+
+        maintenance_time= generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
+        sleep(maintenance_time); //interval between maintenance
 
     }
     

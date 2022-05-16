@@ -252,6 +252,7 @@ void * scheduler(){
 
     print("THREAD SCHEDULER CREATED");
     //int score;
+    
 
     while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside scheduler");
@@ -302,38 +303,46 @@ void * dispacher(){
     //shm_struct * shm = (shm_struct *) args;
     
     print("THREAD DISPACHER CREATED");
+    int i, count, count_dispacher;
+    bool check;
+    task_struct *t;
+    task_struct *save;
+    int save_value;
 
 
 
     while(simulation_status()>=-1){  //while its running or waiting to stop
         //print("inside dispacher");
 
-        
+        pthread_mutex_lock(&shm->dispacher_mutex);
         print("waiting cond var dispacher");
         pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
-        pthread_mutex_lock(&shm->dispacher_mutex);
         print("cond var dispacher wait done!");
-        //pthread_mutex_unlock(&shm->dispacher_mutex);
+        count_dispacher=shm->count_dispacher;
+        print("INSIDE DISPACHER, COUNT %d", count_dispacher);
+        pthread_mutex_unlock(&shm->dispacher_mutex);
 
         if(simulation_status()<0){
             break;
         }
-        int i, count;
-        
-        print("dispacher current count is %d", shm->count_dispacher);
 
-        for(count=0; count< shm->count_dispacher; count++){
-            //sem_wait(&sem_tasks);
+        while(count_dispacher>0){
+            save_value=INT_MAX;
+            check=false;
 
-            task_struct *t;
-            task_struct *save;
-            int save_value=INT_MAX;
+            if(simulation_status()<0){
+            break;
+            }
             
+            pthread_mutex_lock(&shm->dispacher_mutex);
+            count_dispacher=shm->count_dispacher;
+            print("INSIDE DISPACHER, COUNT %d", count_dispacher);
+
             
             for(i=0;i<config->queue_pos; i++){
                 t= &shm->tasklist[i];
                 if(t->id!=0 && t->priority>0){
-                    
+                    check=true;
                     if(t->time_max + t->time_start <= current_time()){
                         write_log("Task %d expired and was never executed", t->id);
                         remove_shm(t);
@@ -350,22 +359,39 @@ void * dispacher(){
             if(save_value<INT_MAX){
                 if(write_unnamed_pipe(save)){
                     remove_shm(save);
-                }
-                else{
-                    count--;
+                    shm->count_dispacher--;
+                    count_dispacher=shm->count_dispacher;
                 }
             }
+                        pthread_mutex_unlock(&shm->dispacher_mutex);
 
-            //sem_post(&sem_tasks);
+            if(check==false){
+                //there is no value in list so just sleep for a bit
+                //this should be a scheduler wait
+                sleep(1);
+                /*
+                pthread_mutex_lock(&shm->scheduler_mutex);
+                print("waiting cond var scheduler");
+                pthread_cond_wait(&shm->scheduler,&shm->scheduler_mutex);
+                print("cond var scheduler wait done!");
+                pthread_mutex_unlock(&shm->scheduler_mutex);
+                */
+            }
+
 
         }
+
+        if(simulation_status()<0){
+            break;
+        }
+
 
         
 	    pthread_mutex_unlock(&shm->scheduler_mutex);
     }
 
     //free(p);
-    
+    print("leaving dispacher");
     pthread_exit(NULL);
     return NULL;
 }
