@@ -17,7 +17,7 @@ void * cpu(void * args){
         server = server->next;
     }
 
-	print("%d inside cpu[%d], before server_mutex", id, parameters[1]);
+	//print("%d inside cpu[%d], before server_mutex", id, parameters[1]);
     //pthread_mutex_lock(&server->server_mutex);
     if(parameters[1]==1){
         cpu= server->cpu1;
@@ -30,32 +30,34 @@ void * cpu(void * args){
         cpu->busy=false;
     }
     //pthread_mutex_unlock(&server->server_mutex);
-    print("%d inside cpu[%d], after server_mutex", id, parameters[1]);
+    //print("%d inside cpu[%d], after server_mutex", id, parameters[1]);
 
     
-    print("inside cpu after params");
+    //print("inside cpu after params");
     
     pthread_mutex_lock(&shm->simulationstarted_mutex);
     	shm->count_init++;
-    	print("%d inside cpu[%d], count init current=%d",  id, parameters[1], shm->count_init);	
+    	//print("%d inside cpu[%d], count init current=%d",  id, parameters[1], shm->count_init);	
     pthread_mutex_unlock(&shm->simulationstarted_mutex);
     
-    pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
-    print("%d inside cpu[%d], after simulation started",  id, parameters[1]);
+    //pthread_cond_wait(&shm->simulationstarted,&shm->simulationstarted_mutex);
+    //print("%d inside cpu[%d], after simulation started",  id, parameters[1]);
    
+   while(simulation_status()==0);
+   //print("after simulation started");
    
-    pthread_mutex_lock(&server->server_mutex); 
-    if(cpu->active==true){
-    	pthread_mutex_lock(&shm->dispacher_mutex);
-	shm->count_dispacher++; //add to the count
-	print("count dispacher is currently %d", shm->count_dispacher);
-	pthread_mutex_unlock(&shm->dispacher_mutex);
-	pthread_cond_signal(&shm->dispacher);
-	print("dispacher cond broadcasted");
-    }
-    pthread_mutex_unlock(&server->server_mutex);	
+pthread_mutex_lock(&server->server_mutex); 
+if(cpu->active==true){
+pthread_mutex_lock(&shm->dispacher_mutex);
+shm->count_dispacher++; //add to the count
+print("count dispacher is currently %d", shm->count_dispacher);
+pthread_mutex_unlock(&shm->dispacher_mutex);
+pthread_cond_signal(&shm->dispacher);
+print("dispacher cond broadcasted");
+}
+pthread_mutex_unlock(&server->server_mutex);	
     
-   free(parameters);
+   //free(parameters);
       
     while(simulation_status()>=0){
     	

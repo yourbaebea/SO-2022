@@ -75,8 +75,8 @@ typedef struct{
 
 
 // Task struct
-typedef struct task_struct_aux task_struct_next;
-typedef struct task_struct_aux{
+//typedef struct task_struct_aux task_struct_next;
+typedef struct /*task_struct_aux*/{
     int id;
     int instructions;
     int time_max;
@@ -85,11 +85,11 @@ typedef struct task_struct_aux{
     int time_needed;
     int time_waiting; //when accepted in cpu, do currenttime- creation time
     int priority;
-    
-    task_struct_next * next;
+    //task_struct_next * next;
 
 }task_struct;
 
+/*
 // Task struct
 typedef struct tasklist_struct_aux tasklist_struct_next;
 typedef struct tasklist_struct_aux{
@@ -99,6 +99,7 @@ typedef struct tasklist_struct_aux{
     task_struct_next * first;
 
 }tasklist_struct;
+*/
 
 
 
@@ -159,11 +160,11 @@ typedef struct{
     //servers array data pointer
     server_struct * server;
     
-    //task_struct * tasklist;
+    task_struct * tasklist;
     //add var to check current num de tasks
 
     pthread_mutex_t status_mutex, simulationstarted_mutex; //for both status!!!!
-    pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex;
+    pthread_mutex_t time_mutex, log_mutex, stats_mutex, scheduler_mutex, dispacher_mutex, tasklist_mutex;
     //whenever we update the struct we need to lock this mutex
 
     // Condition variable
@@ -180,7 +181,7 @@ bool debug=false;
 FILE* log_file;                 // Log file pointer
 shm_struct * shm;
 config_struct * config;
-tasklist_struct * tasklist;
+//tasklist_struct * tasklist;
 
 //TODO
 int mqid;
@@ -223,6 +224,10 @@ void * scheduler();
 void * dispacher();
 bool dispatch_task();
 void task_manager();
+int find_index_shm();
+void remove_shm(task_struct * t);
+void insert_shm(task_struct * t);
+void print_list_shm();
 
 //edge server
 void * cpu(void * args);

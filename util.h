@@ -175,9 +175,12 @@ void * time_update() {
     //sigprocmask(SIG_BLOCK, block_sigint, NULL); //we need to block the sigint signal TODO
     
     //TODO this thread is still not working idk whats wrong
-    
+    int a=0, b=0,c=0;
     while(simulation_status()==0){
     	print("current count=%d", shm->count_init);
+    	b=shm->count_init;
+    	if(b!=a) a=b;
+    	if(b==a) c++;
     	pthread_mutex_lock(&shm->simulationstarted_mutex);
     	if(shm->count_init>=(config->edge_server_number*3)){
     		shm->status=1;
@@ -187,8 +190,15 @@ void * time_update() {
 		    shm->time=0;
 		    pthread_mutex_unlock(&shm->time_mutex);
 		    pthread_cond_broadcast(&shm->simulationstarted);
-    		print("status broadcasted");	   
+    		print("status broadcasted");	
+    		   
     	}
+    	if(c==3){
+    		printf("something when wrong the last time and the memory was not cleared!");
+    		shm->status=-1;
+    		shm->server_status=-1;
+    	}
+    	
     	
     	pthread_mutex_unlock(&shm->simulationstarted_mutex);
     	sleep(1);

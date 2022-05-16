@@ -121,6 +121,7 @@ bool read_config(char * config_file){
 
 //init simulation -> start log, config, shm, mq,...
 void start(char * config_file){
+	int i;
 
     if(!read_config(config_file)){
         print("ERROR READING CONFIG FILE, LEAVING");
@@ -160,64 +161,69 @@ void start(char * config_file){
     print("CREATE SHM");
     int shmid, server_shmid, task_shmid;
    
-    shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT | 0700);
+    shmid = shmget(IPC_PRIVATE, sizeof(shm_struct), IPC_CREAT | 0600);
     if (shmid < 0) {
         print("ERROR IN CREATE SHMID");
         end(EXIT_FAILURE);
     }
 
     shm = (shm_struct*) shmat(shmid, NULL, 0);
-    if (shm == (shm_struct*)-1) {
+    if (shm == (shm_struct*)(-1)) {
         print("ERROR IN CREATE SHM");
         end(EXIT_FAILURE);
     }
     
     //shm for servers
     
-    /*
     
-    server_shmid = shmget(IPC_PRIVATE, sizeof(server_struct) * config->edge_server_number, IPC_CREAT | 0700);
+    
+    server_shmid = shmget(IPC_PRIVATE, sizeof(server_struct) * config->edge_server_number,  IPC_CREAT | 0600);
     if (server_shmid < 0) {
         print("ERROR IN CREATE SHMID");
         end(EXIT_FAILURE);
     }
 
     shm->server = (server_struct*) shmat(server_shmid, NULL, 0);
-    if (shm->server == (server_struct*)-1) {
+    if (shm->server == (server_struct*) (-1)) {
         print("ERROR IN CREATE SHM");
         end(EXIT_FAILURE);
     }
     
-    */
+
     
 
     
     
     //shm for tasks!
     
-    /*
+    int size=sizeof(task_struct) * config->queue_pos;
     
-    task_shmid = shmget(IPC_PRIVATE, sizeof(task_struct) * config->queue_pos, IPC_CREAT | 0700);
+    task_shmid = shmget(IPC_PRIVATE, size,  IPC_CREAT | 0600);
     if (shmid < 0) {
         print("ERROR IN CREATE SHMID");
         end(EXIT_FAILURE);
     }
     
-    shm->tasklist
-
-    shm->tasklist = shmat(task_shmid, NULL, 0);
-    shm->tasklist->next=NULL;
+    shm->tasklist = (task_struct*) shmat(task_shmid, NULL, 0);
+    if (shm->tasklist == (task_struct*)(-1)) {
+        print("ERROR IN CREATE SHM");
+        end(EXIT_FAILURE);
+    }
     
+    //pthread_mutex_lock(&shm->tasklist_mutex);
     
-    */
+    for(i=0; i< config->queue_pos;i++){
+    	shm->tasklist[i].id=0;
+    	shm->tasklist[i].priority=-1;
+    }
+    //pthread_mutex_unlock(&shm->tasklist_mutex);
+    
     
     if(init_mutex()==false){
     	print("ERROR IN CREATE MUTEXES");
         end(EXIT_FAILURE);
     }
     
-    
-    int i;
     server_struct * p;
     server_node * paux;
     pthread_mutexattr_t attrmutex;
@@ -344,6 +350,7 @@ bool init_mutex(){
     shm->time_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->log_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->stats_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->tasklist_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     
     
     shm->dispacher = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
@@ -355,6 +362,7 @@ bool init_mutex(){
     if( pthread_mutex_init(&shm->time_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->log_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->stats_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->tasklist_mutex,&attrmutex)!=0) return false;
 
     if( pthread_mutex_init(&shm->dispacher_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->scheduler_mutex,&attrmutex)!=0) return false;
