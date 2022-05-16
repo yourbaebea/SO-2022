@@ -295,11 +295,11 @@ void * scheduler(){
 
 }
 
-void * dispacher(){
+void * dispatcher(){
     //shm_struct * shm = (shm_struct *) args;
     
-    print("THREAD DISPACHER CREATED");
-    int i, count, count_dispacher;
+    print("THREAD dispatchER CREATED");
+    int i, count, count_dispatcher;
     bool check;
     task_struct *t;
     task_struct *save;
@@ -308,21 +308,21 @@ void * dispacher(){
 
 
     while(simulation_status()>=-1){  //while its running or waiting to stop
-        //print("inside dispacher");
+        //print("inside dispatcher");
 
-        pthread_mutex_lock(&shm->dispacher_mutex);
-        print("waiting cond var dispacher");
-        pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
-        print("cond var dispacher wait done!");
-        count_dispacher=shm->count_dispacher;
-        print("after cond var wait dispacher, COUNT %d", count_dispacher);
-        pthread_mutex_unlock(&shm->dispacher_mutex);
+        pthread_mutex_lock(&shm->dispatcher_mutex);
+        print("waiting cond var dispatcher");
+        pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
+        print("cond var dispatcher wait done!");
+        count_dispatcher=shm->count_dispatcher;
+        print("after cond var wait dispatcher, COUNT %d", count_dispatcher);
+        pthread_mutex_unlock(&shm->dispatcher_mutex);
 
         if(simulation_status()<0){
             break;
         }
 
-        while(count_dispacher>0){
+        while(count_dispatcher>0){
             save_value=INT_MAX;
             check=false;
 
@@ -330,9 +330,9 @@ void * dispacher(){
             break;
             }
             
-            pthread_mutex_lock(&shm->dispacher_mutex);
-            count_dispacher=shm->count_dispacher;
-            print("INSIDE DISPACHER, COUNT %d", count_dispacher);
+            pthread_mutex_lock(&shm->dispatcher_mutex);
+            count_dispatcher=shm->count_dispatcher;
+            print("INSIDE dispatchER, COUNT %d", count_dispatcher);
 
             
             for(i=0;i<config->queue_pos; i++){
@@ -355,11 +355,11 @@ void * dispacher(){
             if(save_value<INT_MAX){
                 if(write_unnamed_pipe(save)){
                     remove_shm(save);
-                    shm->count_dispacher--;
-                    count_dispacher=shm->count_dispacher;
+                    shm->count_dispatcher--;
+                    count_dispatcher=shm->count_dispatcher;
                 }
             }
-                        pthread_mutex_unlock(&shm->dispacher_mutex);
+                        pthread_mutex_unlock(&shm->dispatcher_mutex);
 
             if(check==false){
             print("empty list, sleeping for 3 secs");
@@ -388,7 +388,7 @@ void * dispacher(){
     }
 
     //free(p);
-    print("leaving dispacher");
+    print("leaving dispatcher");
     pthread_exit(NULL);
     return NULL;
 }
@@ -425,10 +425,10 @@ void task_manager() {
     pthread_create(&thread_time, NULL, time_update, NULL);
 
     
-    pthread_t thread_scheduler, thread_dispacher;
+    pthread_t thread_scheduler, thread_dispatcher;
     
     pthread_create(&thread_scheduler, NULL, scheduler, NULL);
-    pthread_create(&thread_dispacher, NULL, dispacher, NULL);
+    pthread_create(&thread_dispatcher, NULL, dispatcher, NULL);
 
     //j=0;
     for(i=0; i< config->edge_server_number; i++){

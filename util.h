@@ -15,9 +15,9 @@ int simulation_status(){
     if(simulation==-1 && shm->server_status==-1){
         shm->status=-2;
         //TODO broadcast the condvariable
-        print("broadcasting cond vars to end the scheduler and dispacher");
+        print("broadcasting cond vars to end the scheduler and dispatcher");
         pthread_cond_signal(&shm->scheduler);
-        pthread_cond_signal(&shm->dispacher);
+        pthread_cond_signal(&shm->dispatcher);
     }
     pthread_mutex_unlock(&shm->status_mutex);
 

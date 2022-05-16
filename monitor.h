@@ -22,7 +22,7 @@ bool check_change(int current){
         float aux_tasks;
         int aux_time;
 		int i;
-		pthread_mutex_lock(&shm->dispacher_mutex);
+		pthread_mutex_lock(&shm->dispatcher_mutex);
         count_tasks=0; 
         for(i=0;i<config->queue_pos; i++){
                 t= &shm->tasklist[i];
@@ -30,7 +30,7 @@ bool check_change(int current){
                     count_tasks++;
                 }    
             }
-			pthread_mutex_unlock(&shm->dispacher_mutex);
+			pthread_mutex_unlock(&shm->dispatcher_mutex);
             
 
 	aux_tasks= count_tasks/(float) config->queue_pos;

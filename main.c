@@ -294,7 +294,7 @@ void start(char * config_file){
     shm->server_status=0;
     pthread_mutex_unlock(&shm->status_mutex);
     shm->count_init=0;
-    shm->count_dispacher=0;
+    shm->count_dispatcher=0;
     
     //print("AFTER MUTEX");
     //tasklist
@@ -344,7 +344,7 @@ bool init_mutex(){
     if(pthread_condattr_init(&cattr)!=0) return false;
     pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
     
-    shm->dispacher_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    shm->dispatcher_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->scheduler_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->status_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->time_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
@@ -353,10 +353,10 @@ bool init_mutex(){
     shm->tasklist_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     
     
-    shm->dispacher = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    shm->dispatcher = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
     shm->scheduler = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
     
-    if( pthread_cond_init(&shm->dispacher,&cattr) !=0) return false;
+    if( pthread_cond_init(&shm->dispatcher,&cattr) !=0) return false;
     if( pthread_cond_init(&shm->scheduler,&cattr)!=0) return false;
     if( pthread_mutex_init(&shm->status_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->time_mutex,&attrmutex)!=0) return false;
@@ -364,7 +364,7 @@ bool init_mutex(){
     if( pthread_mutex_init(&shm->stats_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->tasklist_mutex,&attrmutex)!=0) return false;
 
-    if( pthread_mutex_init(&shm->dispacher_mutex,&attrmutex)!=0) return false;
+    if( pthread_mutex_init(&shm->dispatcher_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->scheduler_mutex,&attrmutex)!=0) return false;
     
     pthread_condattr_destroy(&cattr);

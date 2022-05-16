@@ -51,12 +51,12 @@ void * cpu(void * args){
     pthread_mutex_unlock(&server->server_mutex); 
 
     if(check==true){
-    	pthread_mutex_lock(&shm->dispacher_mutex);
-        shm->count_dispacher++; //add to the count
-        print("count dispacher is currently %d", shm->count_dispacher);
-        pthread_cond_broadcast(&shm->dispacher);
-        print("dispacher cond broadcasted");
-        pthread_mutex_unlock(&shm->dispacher_mutex);
+    	pthread_mutex_lock(&shm->dispatcher_mutex);
+        shm->count_dispatcher++; //add to the count
+        print("count dispatcher is currently %d", shm->count_dispatcher);
+        pthread_cond_broadcast(&shm->dispatcher);
+        print("dispatcher cond broadcasted");
+        pthread_mutex_unlock(&shm->dispatcher_mutex);
     }
    //free(parameters);
       
@@ -99,10 +99,10 @@ void * cpu(void * args){
         cpu->busy=false;
         
         if(server->stopped==false){
-		pthread_mutex_lock(&shm->dispacher_mutex);
-		shm->count_dispacher++; //add to the count
-		pthread_mutex_unlock(&shm->dispacher_mutex);
-		pthread_cond_broadcast(&shm->dispacher);
+		pthread_mutex_lock(&shm->dispatcher_mutex);
+		shm->count_dispatcher++; //add to the count
+		pthread_mutex_unlock(&shm->dispatcher_mutex);
+		pthread_cond_broadcast(&shm->dispatcher);
         }
         else{
         	cpu->active=false;
@@ -233,16 +233,16 @@ void edge_server(int id) {
         pthread_mutex_unlock(&server->server_mutex);
 
         if(server->cpu1->busy==true || server->cpu2->busy==true){
-            pthread_mutex_lock(&shm->dispacher_mutex);
-            pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
-            pthread_mutex_unlock(&shm->dispacher_mutex);
-            print("edge server: maintenance used dispacher cond var once");
+            pthread_mutex_lock(&shm->dispatcher_mutex);
+            pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
+            pthread_mutex_unlock(&shm->dispatcher_mutex);
+            print("edge server: maintenance used dispatcher cond var once");
 
             if(server->cpu1->busy==true || server->cpu2->busy==true){
-                pthread_mutex_lock(&shm->dispacher_mutex);
-                pthread_cond_wait(&shm->dispacher,&shm->dispacher_mutex);
-                pthread_mutex_unlock(&shm->dispacher_mutex);
-                print("edge server: maintenance used dispacher cond var twice");
+                pthread_mutex_lock(&shm->dispatcher_mutex);
+                pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
+                pthread_mutex_unlock(&shm->dispatcher_mutex);
+                print("edge server: maintenance used dispatcher cond var twice");
             }
             //we need to do this in case both cpus are being used
         }
@@ -273,13 +273,13 @@ void edge_server(int id) {
         
         //send cond var
         
-        pthread_mutex_lock(&shm->dispacher_mutex);
-	shm->count_dispacher++; //add to the count
+        pthread_mutex_lock(&shm->dispatcher_mutex);
+	shm->count_dispatcher++; //add to the count
         if(s==2){
-            shm->count_dispacher++; //add to the count
+            shm->count_dispatcher++; //add to the count
         }
-        pthread_cond_broadcast(&shm->dispacher);
-        pthread_mutex_unlock(&shm->dispacher_mutex);
+        pthread_cond_broadcast(&shm->dispatcher);
+        pthread_mutex_unlock(&shm->dispatcher_mutex);
     }
     
     print("out of msgrcv cycle, ending");
