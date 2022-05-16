@@ -174,7 +174,7 @@ void start(char * config_file){
     
     //shm for servers
     
-    
+    /*
     
     server_shmid = shmget(IPC_PRIVATE, sizeof(server_struct) * config->edge_server_number, IPC_CREAT | 0700);
     if (server_shmid < 0) {
@@ -188,14 +188,14 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     
-
+    */
     
 
     
     
     //shm for tasks!
     
-
+    /*
     
     task_shmid = shmget(IPC_PRIVATE, sizeof(task_struct) * config->queue_pos, IPC_CREAT | 0700);
     if (shmid < 0) {
@@ -203,6 +203,13 @@ void start(char * config_file){
         end(EXIT_FAILURE);
     }
     
+    shm->tasklist
+
+    shm->tasklist = shmat(task_shmid, NULL, 0);
+    shm->tasklist->next=NULL;
+    
+    
+    */
     
     if(init_mutex()==false){
     	print("ERROR IN CREATE MUTEXES");
@@ -337,7 +344,6 @@ bool init_mutex(){
     shm->time_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->log_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     shm->stats_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
-    shm->tasklist_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     
     
     shm->dispacher = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
@@ -349,7 +355,6 @@ bool init_mutex(){
     if( pthread_mutex_init(&shm->time_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->log_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->stats_mutex,&attrmutex)!=0) return false;
-    if( pthread_mutex_init(&shm->tasklist_mutex,&attrmutex)!=0) return false;
 
     if( pthread_mutex_init(&shm->dispacher_mutex,&attrmutex)!=0) return false;
     if( pthread_mutex_init(&shm->scheduler_mutex,&attrmutex)!=0) return false;
