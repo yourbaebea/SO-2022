@@ -309,16 +309,20 @@ void edge_server(int id) {
     bool okay=true;
     while(okay){
 	    pthread_mutex_lock(&server->server_mutex);
-	    if(server->cpu1->busy || server->cpu1->busy) okay=false;
+	    if(server->cpu1->busy==false && server->cpu1->busy==false) okay=false;
 	    pthread_mutex_unlock(&server->server_mutex);
-	    if(okay) sleep(1);
+	    if(okay){
+	    sleep(1);
+	    print("waiting to end edge server");
+	    }
    }
     
+    print("waiting to end edge server");
     pthread_cancel(thread_cpu1);
     pthread_cancel(thread_cpu2);
     pthread_cancel(thread_read_pipe);
     
-    
+    print("waiting to end edge server");
     pthread_join(thread_cpu1,NULL);
     pthread_join(thread_cpu2,NULL);
     pthread_join(thread_read_pipe,NULL);

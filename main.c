@@ -390,6 +390,7 @@ int main(int argc, char *argv[]){
 	sigdelset(&mask, SIGTSTP);
 	sigprocmask(SIG_SETMASK, &mask, NULL);
 	signal(SIGINT, terminate);
+	signal(SIGTSTP, print_stats);
 
     print("SYSTEM MANAGER");
    

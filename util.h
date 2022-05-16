@@ -82,7 +82,7 @@ void terminate(){
 void print_stats(){
 	char stats[10000];
 	
-	strcpy(stats, "\tSTATISTICS\n");
+	strcpy(stats, "\n\tSTATISTICS\n");
 	
 	char buffer[BUF_SIZE];
 	pthread_mutex_lock(&shm->stats_mutex); // not sure if its absolutely needed here
@@ -109,7 +109,7 @@ void print_stats(){
 	pthread_mutex_unlock(&shm->stats_mutex);
 	
 	
-	strcat(stats, "----------------------------------\n");
+	strcat(stats, "------------------------------------------\n");
 	
 	write_log(stats);
 }
