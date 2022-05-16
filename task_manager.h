@@ -21,6 +21,7 @@ void print_list(){
 
 void print_list_shm(){
     int i;
+    if(debug){
     //task_struct *t;
 	pthread_mutex_lock(&shm->tasklist_mutex);
 	for(i=0;i<config->queue_pos; i++){
@@ -30,6 +31,7 @@ void print_list_shm(){
     	}
 	printf("end\n");
 	pthread_mutex_unlock(&shm->tasklist_mutex);
+	}
 }
 
 
@@ -417,6 +419,7 @@ void task_manager() {
         if(fork()){
             print("--- server %d of %d", i,config->edge_server_number);
             edge_server(i);
+            exit(0);
         }
     }
     
@@ -424,23 +427,29 @@ void task_manager() {
     read_task_pipe();
     
     
-    pthread_cancel(thread_scheduler);
-    pthread_cancel(thread_dispatcher);
-    
     pthread_join(thread_scheduler,NULL);
     pthread_join(thread_dispatcher,NULL);
     
-
-    while(wait(NULL)>0);
     
+    print("end of task");
+    bool end=false;
+    while(1){
+    print("waiting for count end");
+    pthread_mutex_lock(&shm->status_mutex);  
+    if(shm->count_end== config->edge_server_number) end=true;
+    pthread_mutex_unlock(&shm->status_mutex);
+    if(end) break;
+    sleep(1);
+    
+    }
+    
+    print("shm -1");
     pthread_mutex_lock(&shm->status_mutex);
-        shm->status=-2;
+    shm->server_status=-1;
     pthread_mutex_unlock(&shm->status_mutex);
     
     pthread_join(thread_time,NULL);
     print("task manager:exit");
-    
-    end(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }

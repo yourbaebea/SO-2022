@@ -230,7 +230,6 @@ void edge_server(int id) {
     while(simulation_status()==0);
     write_log("SERVER %s READY", server->name);
     
-    print("server %d OR %d: reading msgs",  server->id, id);
     while(simulation_status()>=0){
     
         if(msgrcv(mqid, &msg, sizeof(msg_struct)-sizeof(long), id, 0)== -1){
@@ -245,7 +244,9 @@ void edge_server(int id) {
         }
         else{
         
-        print("edge server, msgrcv");
+        write_log("%s IS GOING TO MAINTENANCE", server->name);
+        
+        print("edge server received msg from maintenance %d",msg.maintenance_time);
 
         //stop all things
         pthread_mutex_lock(&server->server_mutex);
@@ -254,34 +255,38 @@ void edge_server(int id) {
         server->cpu1->active=false;
         server->cpu2->active=false;
         pthread_mutex_unlock(&server->server_mutex);
+        
+        bool okay=false;
 
-        if(server->cpu1->busy==true || server->cpu2->busy==true){
-            pthread_mutex_lock(&shm->dispatcher_mutex);
-            pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
-            pthread_mutex_unlock(&shm->dispatcher_mutex);
-            print("edge server: maintenance used dispatcher cond var once");
-
-            if(server->cpu1->busy==true || server->cpu2->busy==true){
-                pthread_mutex_lock(&shm->dispatcher_mutex);
-                pthread_cond_wait(&shm->dispatcher,&shm->dispatcher_mutex);
-                pthread_mutex_unlock(&shm->dispatcher_mutex);
-                print("edge server: maintenance used dispatcher cond var twice");
-            }
-            //we need to do this in case both cpus are being used
+        while(1){
+        	pthread_mutex_lock(&server->server_mutex);
+        	print("1HERE HERE HERE");
+        	if(server->cpu1->busy==false && server->cpu2->busy==false) okay=true;
+        	pthread_mutex_unlock(&server->server_mutex);
+        	if(okay) break;
+        	print("server: waiting for current tasks to be done so it can go maintenance");
+        	sleep(1);
+        	
         }
-
-    
+        
+        print("maintenance.....");
 
         sleep(msg.maintenance_time);
 
-        reply = (msg_struct) {(long) INT_MAX, msg.mtype};
-        msgsnd(mqid, &reply, sizeof(msg_struct), 0);
+        /* 
+        //THIS SHOULD NOT BE IN COMMENT
+        reply = (msg_struct) {(long) INT_MAX, id};
+        msgsnd(mqid, &reply, sizeof(msg_struct)-sizeof(long), 0);
 
-        msgrcv(mqid, &confirmation, sizeof(msg_struct), id, 0);
+        msgrcv(mqid, &confirmation, sizeof(msg_struct)- sizeof(long), id, 0);
         
+        */
         pthread_mutex_lock(&shm->status_mutex);
     	int s=shm->server_status;
     	pthread_mutex_unlock(&shm->status_mutex);
+    	
+    	
+    	write_log("%s RESTORED, GOING BACK TO ACTIVITY", server->name);
 
         //restart all things
         pthread_mutex_lock(&server->server_mutex);
@@ -316,6 +321,10 @@ void edge_server(int id) {
 	    print("waiting to end edge server");
 	    }
    }
+   
+   pthread_mutex_lock(&server->server_mutex);
+	if(server->cpu1->busy==false && server->cpu1->busy==false) okay=false;
+   pthread_mutex_unlock(&server->server_mutex);
     
     print("waiting to end edge server");
     pthread_cancel(thread_cpu1);
@@ -326,6 +335,11 @@ void edge_server(int id) {
     pthread_join(thread_cpu1,NULL);
     pthread_join(thread_cpu2,NULL);
     pthread_join(thread_read_pipe,NULL);
+    
+    
+    pthread_mutex_lock(&shm->status_mutex);  
+    shm->count_end++;
+    pthread_mutex_unlock(&shm->status_mutex);
 
     print("server: exit");
     //keep the process alive untill the threads end

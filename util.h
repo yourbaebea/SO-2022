@@ -121,6 +121,8 @@ void end(int status){
 	
     write_log("CLEARING MEMORY TO END SIMULATION");
     
+    print_stats();
+    
     //tasks -> delete all tasks on linked list, doesnot need to update stats
     //TODO
     
@@ -157,7 +159,7 @@ void end(int status){
     
     
     print("ALL RESOURCES WERE CLEARED, EXITING");
-    exit(status);
+    //exit(status);
 }
 
 //used in thread time for update

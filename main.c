@@ -297,6 +297,7 @@ void start(char * config_file){
     pthread_mutex_unlock(&shm->status_mutex);
     shm->count_init=0;
     shm->count_dispatcher=0;
+    shm->count_end=0;
     
     //print("AFTER MUTEX");
     //tasklist
@@ -425,17 +426,23 @@ int main(int argc, char *argv[]){
 			//this continues to be the SYSTEM MANAGER
 
 
-			while(simulation_status()>-2){
+			while(simulation_status()>=-2){
 			//not sure what to do here?
 			sleep(1);
 			}
+			
+			print("bf end");
+			
+			end(EXIT_SUCCESS);
 			
 			//idk what the main does after this?
 
      			print("main: exit");
 		    }
 	    }
+	   
     }
+    wait(NULL);
 
     return 0;
 }

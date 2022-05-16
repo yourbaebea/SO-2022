@@ -29,7 +29,7 @@ void * read_msg_queue(int value/*void * args*/){
         else{
             //response to server
             msg = (msg_struct) {(long) reply.mtype, 0};
-            msgsnd(mqid, &msg, sizeof(msg_struct), 0);
+            msgsnd(mqid, &msg, sizeof(msg_struct)-sizeof(long), 0);
         }
     }
     return NULL;
@@ -89,17 +89,17 @@ void maintenance_manager() {
         
                    
         if(valid==true){
-            //print("maintenance:valid, we are sending a msg");
             maintenance_time=generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
             msg = (msg_struct) {(long) maintenance, maintenance_time};
-            msgsnd(mqid, &msg, sizeof(msg_struct), 0);
+            msgsnd(mqid, &msg, sizeof(msg_struct)- sizeof(long), 0);
+            print("maintenance:valid, we are sending a msg %d %d", msg.mtype, msg.maintenance_time);
         }
         else{
-            //print("maintenance: tried server %d, couldnt", maintenance);
+            print("maintenance: tried server %d, couldnt", maintenance);
         }
 
         maintenance_time= generate(MAINTENANCE_MINIMUM,MAINTENANCE_MAXIMUM);
-        sleep(maintenance_time); //interval between maintenance
+        sleep(maintenance_time * 5); //interval between maintenance
 
     }
     

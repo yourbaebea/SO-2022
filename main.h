@@ -152,6 +152,7 @@ typedef struct
     int time;
     int status;        // 1 ready/running,0 hasnt started yet, -1 needs to end/waiting to end, -2 end
     int server_status; // 2 high, 1 normal, 0 hasnt started yet, -1 stopped;
+    int count_end;
     int count_init;
     int count_dispatcher;
     stats_struct *stats;

@@ -142,7 +142,7 @@ void monitor() {
             }	
         }
         else{
-            //print("monitor: no changes");
+            print("monitor: no changes");
         }
         
         sleep(1);
