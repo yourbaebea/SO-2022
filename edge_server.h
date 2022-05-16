@@ -306,17 +306,22 @@ void edge_server(int id) {
         }
     }
     
-    //print("server: out of msgrcv cycle, ending");
-
-    //free(msg);
-    //free(reply);
-    //free(confirmation);
+    bool okay=true;
+    while(okay){
+	    pthread_mutex_lock(&server->server_mutex);
+	    if(server->cpu1->busy || server->cpu1->busy) okay=false;
+	    pthread_mutex_unlock(&server->server_mutex);
+	    if(okay) sleep(1);
+   }
     
-    /*
+    pthread_cancel(thread_cpu1);
+    pthread_cancel(thread_cpu2);
+    pthread_cancel(thread_read_pipe);
+    
+    
     pthread_join(thread_cpu1,NULL);
     pthread_join(thread_cpu2,NULL);
     pthread_join(thread_read_pipe,NULL);
-    */
 
     print("server: exit");
     //keep the process alive untill the threads end

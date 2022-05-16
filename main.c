@@ -384,27 +384,39 @@ int main(int argc, char *argv[]){
     if(argc == 3 && strcmp(argv[2], "debug") == 0) debug = true;
 
 
+	sigset_t mask;
+	sigfillset(&mask);
+	sigdelset(&mask, SIGINT);
+	sigdelset(&mask, SIGTSTP);
+	sigprocmask(SIG_SETMASK, &mask, NULL);
+	signal(SIGINT, terminate);
+
     print("SYSTEM MANAGER");
    
     start(argv[1]);
 
     print("START DONE");
-    
-    signal(SIGINT, terminate);
-    	signal (SIGTSTP,print_stats);
-    	sigemptyset(&block_sigint);
-    	sigaddset(&block_sigint, SIGINT);
+
 
     if(fork()) {
+    	signal(SIGINT, SIG_IGN);
+    	signal(SIGTSTP, SIG_IGN);
         task_manager();
+        exit(0);
     }
     else{
 	    if(fork()) {
+	    	signal(SIGINT, SIG_IGN);
+    		signal(SIGTSTP, SIG_IGN);
 		monitor();
+		exit(0);
 	    }
 	    else{
 		    if(fork()) {
+		    	signal(SIGINT, SIG_IGN);
+    			signal(SIGTSTP, SIG_IGN);
 			maintenance_manager();
+			exit(0);
 		    }
 		    else {
 		       
@@ -412,7 +424,7 @@ int main(int argc, char *argv[]){
 			//this continues to be the SYSTEM MANAGER
 
 
-			while(simulation_status()>=-2){
+			while(simulation_status()>-2){
 			//not sure what to do here?
 			sleep(1);
 			}
@@ -423,10 +435,6 @@ int main(int argc, char *argv[]){
 		    }
 	    }
     }
-    
-    while(wait(NULL)>0);
-    end(EXIT_SUCCESS);
-    
 
     return 0;
 }

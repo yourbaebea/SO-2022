@@ -422,13 +422,25 @@ void task_manager() {
     
   
     read_task_pipe();
-    /*
+    
+    
+    pthread_cancel(thread_scheduler);
+    pthread_cancel(thread_dispatcher);
+    
     pthread_join(thread_scheduler,NULL);
     pthread_join(thread_dispatcher,NULL);
-    pthread_join(thread_time,NULL);
-    */
+    
+
     while(wait(NULL)>0);
+    
+    pthread_mutex_lock(&shm->status_mutex);
+        shm->status=-2;
+    pthread_mutex_unlock(&shm->status_mutex);
+    
+    pthread_join(thread_time,NULL);
     print("task manager:exit");
+    
+    end(EXIT_SUCCESS);
     //keep the process alive untill the threads end
 
 }

@@ -72,24 +72,10 @@ void write_log(char * message, ...){
 void terminate(){
 	write_log("SIMULATION ENDING...");
 	signal(SIGINT, SIG_IGN);
-	//update shm status to ending, this should end all threads EXCEPT the time, monitor, task manager, etc etc
-	/* 
-	wait for it to end:
-	- search the servers status, when all are not running its done
-	- finish time thread
-	- print_stats();
-	- end(EXIT_SUCCESS);
-
-	
-	*/
 	pthread_mutex_lock(&shm->status_mutex);
         shm->status=-1;
     	pthread_mutex_unlock(&shm->status_mutex);
-    	print("ending...");
-    	//sleep(10);
-    	//exit(EXIT_SUCCESS);
-	
-
+    	//print("ending...");
 }
 
 //print the stats
@@ -130,7 +116,9 @@ void print_stats(){
 
 //delete all and end
 void end(int status){
+	//called by task manager
 	int i;
+	
     write_log("CLEARING MEMORY TO END SIMULATION");
     
     //tasks -> delete all tasks on linked list, doesnot need to update stats
